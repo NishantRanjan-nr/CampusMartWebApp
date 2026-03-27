@@ -129,7 +129,7 @@ class CampusMartAPITester:
 
     def test_create_item(self):
         """Test creating an item listing"""
-        success, data = self.make_request('POST', 'items/', self.test_item, 200)
+        success, data = self.make_request('POST', 'items', self.test_item, 200)
         
         if success and 'id' in data:
             self.test_item['id'] = data['id']
@@ -222,7 +222,7 @@ class CampusMartAPITester:
             "end_date": (datetime.now() + timedelta(days=3)).isoformat()
         }
         
-        success, data = self.make_request('POST', 'bookings/', booking_data, 400)
+        success, data = self.make_request('POST', 'bookings', booking_data, 400)
         
         if success and 'Cannot book your own item' in data.get('detail', ''):
             self.log_result("Create Booking (Own Item)", True, "Correctly rejected booking own item")
@@ -233,7 +233,7 @@ class CampusMartAPITester:
 
     def test_get_bookings(self):
         """Test getting user bookings"""
-        success, data = self.make_request('GET', 'bookings/')
+        success, data = self.make_request('GET', 'bookings')
         
         if success and isinstance(data, list):
             self.log_result("Get Bookings", True, f"Retrieved {len(data)} bookings")

@@ -26,7 +26,7 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'campusmart-secret-key-2024')
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
-# Create the main app
+# Create the main app with redirect_slashes enabled (default behavior)
 app = FastAPI(title="CampusMart API")
 
 # Security
@@ -305,7 +305,7 @@ async def update_profile(
 
 # ===================== ITEMS ROUTES =====================
 
-@items_router.post("/", response_model=ItemResponse)
+@items_router.post("", response_model=ItemResponse)
 async def create_item(item_data: ItemCreate, current_user: dict = Depends(get_current_user)):
     item_id = str(uuid.uuid4())
     item = {
@@ -331,7 +331,7 @@ async def create_item(item_data: ItemCreate, current_user: dict = Depends(get_cu
     await db.items.insert_one(item)
     return ItemResponse(**item)
 
-@items_router.get("/", response_model=List[ItemResponse])
+@items_router.get("", response_model=List[ItemResponse])
 async def get_items(
     category: Optional[str] = None,
     min_price: Optional[float] = None,
@@ -408,7 +408,7 @@ async def delete_item(item_id: str, current_user: dict = Depends(get_current_use
 
 # ===================== BOOKING ROUTES =====================
 
-@booking_router.post("/", response_model=BookingResponse)
+@booking_router.post("", response_model=BookingResponse)
 async def create_booking(booking_data: BookingCreate, current_user: dict = Depends(get_current_user)):
     item = await db.items.find_one({"id": booking_data.item_id}, {"_id": 0})
     if not item:
@@ -448,7 +448,7 @@ async def create_booking(booking_data: BookingCreate, current_user: dict = Depen
     await db.bookings.insert_one(booking)
     return BookingResponse(**booking)
 
-@booking_router.get("/", response_model=List[BookingResponse])
+@booking_router.get("", response_model=List[BookingResponse])
 async def get_bookings(current_user: dict = Depends(get_current_user)):
     # Get bookings where user is renter or owner
     bookings = await db.bookings.find(
@@ -488,7 +488,7 @@ async def update_booking_status(booking_id: str, status_data: BookingStatusUpdat
 
 # ===================== MESSAGES ROUTES =====================
 
-@messages_router.post("/", response_model=MessageResponse)
+@messages_router.post("", response_model=MessageResponse)
 async def send_message(msg_data: MessageCreate, current_user: dict = Depends(get_current_user)):
     receiver = await db.users.find_one({"id": msg_data.receiver_id}, {"_id": 0})
     if not receiver:
@@ -564,7 +564,7 @@ async def get_unread_count(current_user: dict = Depends(get_current_user)):
 
 # ===================== REVIEWS ROUTES =====================
 
-@reviews_router.post("/", response_model=ReviewResponse)
+@reviews_router.post("", response_model=ReviewResponse)
 async def create_review(review_data: ReviewCreate, current_user: dict = Depends(get_current_user)):
     # Verify booking exists and is completed
     booking = await db.bookings.find_one({"id": review_data.booking_id}, {"_id": 0})
