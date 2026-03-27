@@ -7,7 +7,14 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(localStorage.getItem('token'));
+    const [token, setToken] = useState(() => {
+        const savedToken = localStorage.getItem('token');
+        if (savedToken) {
+            // Set axios default header immediately on initialization
+            axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+        }
+        return savedToken;
+    });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
