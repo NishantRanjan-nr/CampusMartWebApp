@@ -1,0 +1,138 @@
+{
+  "project_name": "CampusMart",
+  "domain": "C2C Student Marketplace + SaaS Dashboard",
+  "archetype": "Archetype 4 (Swiss & High-Contrast) infused with Gen-Z Y2K Elements",
+  "theme": "both (light and dark mode toggle)",
+  "design_philosophy": "A frictionless, high-energy C2C marketplace blending Neo-Brutalist bold contrast for Gen-Z appeal with an elite 'Control Room' SaaS dashboard for vendors/students managing their items.",
+  "colors": {
+    "light": {
+      "background": "210 40% 98%",
+      "foreground": "222 47% 11%",
+      "card": "0 0% 100%",
+      "card_foreground": "222 47% 11%",
+      "popover": "0 0% 100%",
+      "popover_foreground": "222 47% 11%",
+      "primary": "220 100% 50%",
+      "primary_foreground": "210 40% 98%",
+      "secondary": "210 40% 96.1%",
+      "secondary_foreground": "222 47% 11%",
+      "muted": "210 40% 96.1%",
+      "muted_foreground": "215.4 16.3% 46.9%",
+      "accent": "186 100% 50%",
+      "accent_foreground": "222 47% 11%",
+      "destructive": "0 84.2% 60.2%",
+      "destructive_foreground": "210 40% 98%",
+      "border": "214.3 31.8% 91.4%",
+      "input": "214.3 31.8% 91.4%",
+      "ring": "220 100% 50%"
+    },
+    "dark": {
+      "background": "226 47% 7%",
+      "foreground": "210 40% 98%",
+      "card": "222 47% 11%",
+      "card_foreground": "210 40% 98%",
+      "popover": "222 47% 11%",
+      "popover_foreground": "210 40% 98%",
+      "primary": "220 100% 50%",
+      "primary_foreground": "210 40% 98%",
+      "secondary": "217.2 32.6% 17.5%",
+      "secondary_foreground": "210 40% 98%",
+      "muted": "217.2 32.6% 17.5%",
+      "muted_foreground": "215 20.2% 65.1%",
+      "accent": "186 100% 50%",
+      "accent_foreground": "222 47% 11%",
+      "destructive": "0 62.8% 30.6%",
+      "destructive_foreground": "210 40% 98%",
+      "border": "217.2 32.6% 17.5%",
+      "input": "217.2 32.6% 17.5%",
+      "ring": "220 100% 50%"
+    },
+    "forbidden_colors": ["#1B93A4", "#9D4CDD", "#7351B7"],
+    "notes": "Use Vivid Azure (Primary) for primary trust actions. Use Electric Cyan (Accent) strictly for kinetic triggers, micro-interactions, and highlights. Never use pure #000000 or #ffffff; always use the tinted HSL variables above."
+  },
+  "typography": {
+    "fonts": {
+      "heading": "'Outfit', sans-serif",
+      "body": "'Manrope', sans-serif",
+      "mono": "'JetBrains Mono', monospace"
+    },
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-semibold tracking-tight",
+      "h4": "text-lg sm:text-xl font-medium",
+      "body": "text-base leading-relaxed font-normal",
+      "small": "text-sm font-medium",
+      "overline": "text-xs font-bold uppercase tracking-[0.2em]"
+    },
+    "forbidden_fonts": ["Inter", "Roboto", "Open Sans", "Lato", "Syne"]
+  },
+  "spacing_and_layout": {
+    "marketplace_mode": {
+      "grid": "Bento 'Tetris' Grid (Mode A). grid-cols-1 md:grid-cols-8 lg:grid-cols-12 with gap-8 or gap-12.",
+      "philosophy": "Asymmetry creates tension. Use overlapping elements, generous p-8/p-12 paddings, and negative space.",
+      "hero_image": "Max overlay opacity bg-black/40. If text contrast is needed, use bg-gradient-to-r."
+    },
+    "dashboard_mode": {
+      "grid": "Control Room Grid (Mode B). grid-cols-1 md:grid-cols-3 lg:grid-cols-4 with gap-4 or gap-6.",
+      "philosophy": "Density, clarity, and flat structures. Every pixel utilized. h-full on children.",
+      "surfaces": "Neumorphism Tactile variants. Flat background, sharp 1px border (border-border), no massive drop shadows."
+    },
+    "universal": {
+      "container_padding": "Containers with borders MUST have internal padding (p-6 or p-8) to prevent text collision.",
+      "alignment": "Left-align paragraphs, inputs, dense content. Center-align hero headings only if it balances the page."
+    }
+  },
+  "surfaces_and_effects": {
+    "header": "Glassmorphism 'Crystal'. backdrop-blur-xl bg-background/70. 1px delicate inner stroke (border-border/40). z-50 sticky.",
+    "cards": "1px subtle border (border-border), flat bg. On hover: -translate-y-1, shadow-lg, border color darkens.",
+    "buttons": "High contrast. ALWAYS explicitly set text color on hover (e.g., hover:bg-primary/90 hover:text-primary-foreground).",
+    "marquee": "Use an 'Editorial Ribbon' for feature/category lists. Low contrast bg, wide gap-24."
+  },
+  "components_strategy": {
+    "marketing_pages": "Use pure HTML/Tailwind for structure to allow creative overlapping and asymmetry.",
+    "forms_and_logic": "ALWAYS use Shadcn UI components (Input, Select, Form, Checkbox) but heavily customize with Tailwind.",
+    "dashboard_data": "Use Shadcn Table, Tabs, Cards, Dialogs. NO default HTML selects or datepickers.",
+    "icons": "Use @phosphor-icons/react for Duotone weights in marketing, and regular weights in dashboard. Provide yarn add @phosphor-icons/react.",
+    "testing": "All interactive/informational elements MUST include role-based kebab-case data-testid attributes (e.g., data-testid='login-submit-button')."
+  },
+  "media": {
+    "hero": {
+      "url": "https://images.unsplash.com/photo-1758270704464-f980b03b9633?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODh8MHwxfHNlYXJjaHwzfHxjb2xsZWdlJTIwc3R1ZGVudHMlMjBjYW1wdXMlMjBzb2NpYWxpemluZ3xlbnwwfHx8fDE3NzQ2MDE2MzZ8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Gen Z students socializing on campus. Use for the main marketplace hero section with an overlay."
+    },
+    "categories": [
+      {
+        "url": "https://images.pexels.com/photos/3184451/pexels-photo-3184451.jpeg",
+        "description": "Tech gadgets and electronics category thumbnail. Flatlay of aesthetic desk setup."
+      },
+      {
+        "url": "https://images.pexels.com/photos/5698856/pexels-photo-5698856.jpeg",
+        "description": "Fashion/Clothes category thumbnail. Row of colorful shirts on hangers."
+      }
+    ],
+    "products": [
+      {
+        "url": "https://images.unsplash.com/photo-1760462788374-fe0d2d4ba4d1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwxfHxhZXN0aGV0aWMlMjBtb2Rlcm4lMjB0ZWNoJTIwZ2FkZ2V0JTIwZGVza3xlbnwwfHx8fDE3NzQ2MDE2Mzl8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Product image for modern tech/smartphone on charging stand."
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1574089511111-14c8dbb77b2a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODF8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBzdHJlZXR3ZWFyJTIwZmFzaGlvbiUyMGhhbmdlcnxlbnwwfHx8fDE3NzQ2MDE2Mzd8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Product image for streetwear/clothing."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Install required dependencies: yarn add @phosphor-icons/react clsx tailwind-merge framer-motion lucide-react",
+    "Update tailwind.config.js with the provided HSL color variables and font families.",
+    "Import 'Outfit' and 'Manrope' fonts via Google Fonts in index.css.",
+    "Ensure the application structure splits into two primary layouts: the Public Marketplace (asymmetrical, creative) and the SaaS Dashboard (dense, functional).",
+    "Never use generic placeholder images. ONLY use the provided URLs in the 'media' object.",
+    "Implement the theme toggle using next-themes or equivalent, defaulting to system preference.",
+    "All form interactions (search, filters, booking, login) MUST use customized Shadcn UI components.",
+    "Add 'data-testid' to all buttons, links, inputs, and major layout sections.",
+    "Do NOT use HTML native datepickers or selects; rely entirely on Shadcn.",
+    "For the hero image, apply a gradient overlay like bg-gradient-to-r from-black/60 to-transparent so text is readable without obscuring the image completely.",
+    "Ensure all Grid layouts use direct children for motion elements or valid subgrids to prevent layout breaking."
+  ]
+}

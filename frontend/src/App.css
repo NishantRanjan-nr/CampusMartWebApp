@@ -1,0 +1,80 @@
+/* CampusMart Custom Styles */
+
+/* Hero gradient overlay */
+.hero-overlay {
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.6), transparent);
+}
+
+/* Card animations */
+.item-card {
+    @apply transition-all duration-300 ease-out;
+}
+
+.item-card:hover {
+    @apply -translate-y-1 shadow-xl;
+}
+
+/* Sidebar active state */
+.sidebar-link {
+    @apply relative overflow-hidden;
+}
+
+.sidebar-link.active::before {
+    content: '';
+    @apply absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r;
+}
+
+/* Dashboard card hover */
+.stat-card {
+    @apply transition-all duration-200;
+}
+
+.stat-card:hover {
+    @apply border-primary/50 shadow-lg shadow-primary/5;
+}
+
+/* Image gallery */
+.gallery-thumb {
+    @apply transition-opacity duration-200 cursor-pointer;
+}
+
+.gallery-thumb:hover {
+    @apply opacity-80;
+}
+
+.gallery-thumb.active {
+    @apply ring-2 ring-primary;
+}
+
+/* Filter panel */
+.filter-section {
+    @apply pb-4 mb-4 border-b border-border last:border-0 last:pb-0 last:mb-0;
+}
+
+/* Message bubble */
+.message-bubble {
+    @apply max-w-[80%] px-4 py-2 rounded-2xl;
+}
+
+.message-bubble.sent {
+    @apply bg-primary text-primary-foreground rounded-br-sm ml-auto;
+}
+
+.message-bubble.received {
+    @apply bg-muted text-foreground rounded-bl-sm;
+}
+
+/* Rating stars */
+.star-rating {
+    @apply flex items-center gap-0.5;
+}
+
+/* Booking calendar */
+.booking-calendar .rdp-day_selected {
+    @apply bg-primary text-primary-foreground;
+}
+
+/* Loading skeleton */
+.skeleton {
+    @apply animate-pulse bg-muted rounded;
+}
