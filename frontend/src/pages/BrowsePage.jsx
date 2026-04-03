@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import { useState, useEffect, useMemo } from 'react';
-=======
-import { useState, useEffect } from 'react';
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -23,12 +19,9 @@ import { motion } from 'framer-motion';
 import { MagnifyingGlass, Funnel, Star, MapPin, X } from '@phosphor-icons/react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-<<<<<<< HEAD
 const PRICE_MIN = 0;
 const PRICE_MAX = 100;
 const PRICE_STEP = 1;
-=======
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
 
 export default function BrowsePage() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -39,7 +32,6 @@ export default function BrowsePage() {
     // Filters
     const [search, setSearch] = useState(searchParams.get('search') || '');
     const [category, setCategory] = useState(searchParams.get('category') || '');
-<<<<<<< HEAD
     const [maxPrice, setMaxPrice] = useState(PRICE_MAX);
 
     // Store products
@@ -87,18 +79,10 @@ export default function BrowsePage() {
         const clampedMax = Math.min(PRICE_MAX, Math.max(PRICE_MIN, nextMax));
         setMaxPrice(clampedMax);
     };
-
-=======
-    const [priceRange, setPriceRange] = useState([0, 100]);
-    const [location, setLocation] = useState('');
-    const [sortBy, setSortBy] = useState('newest');
-
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
     useEffect(() => {
         fetchItems();
     }, [searchParams]);
 
-<<<<<<< HEAD
     useEffect(() => {
         if (category) {
             setStoreCategory(category.toLowerCase());
@@ -122,9 +106,6 @@ export default function BrowsePage() {
 
         fetchStoreProducts();
     }, []);
-
-=======
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
     const fetchItems = async () => {
         setLoading(true);
         try {
@@ -134,12 +115,7 @@ export default function BrowsePage() {
 
             if (searchQuery) params.append('search', searchQuery);
             if (categoryQuery) params.append('category', categoryQuery);
-<<<<<<< HEAD
             if (maxPrice < PRICE_MAX) params.append('max_price', maxPrice);
-=======
-            if (priceRange[0] > 0) params.append('min_price', priceRange[0]);
-            if (priceRange[1] < 100) params.append('max_price', priceRange[1]);
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
             if (location) params.append('location', location);
 
             const response = await axios.get(`${API}/items?${params.toString()}`);
@@ -187,11 +163,7 @@ export default function BrowsePage() {
     const clearFilters = () => {
         setSearch('');
         setCategory('');
-<<<<<<< HEAD
         setMaxPrice(PRICE_MAX);
-=======
-        setPriceRange([0, 100]);
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
         setLocation('');
         setSearchParams({});
     };
@@ -235,7 +207,6 @@ export default function BrowsePage() {
             {/* Price Range */}
             <div className="filter-section">
                 <Label className="text-sm font-semibold mb-3 block">Price per Day</Label>
-<<<<<<< HEAD
                 <div className="relative z-10 pointer-events-auto">
                     <Slider
                         value={[maxPrice]}
@@ -250,19 +221,6 @@ export default function BrowsePage() {
                 <div className="flex justify-between text-sm text-muted-foreground">
                     <span>₹{PRICE_MIN}</span>
                     <span>₹{maxPrice}+</span>
-=======
-                <Slider
-                    value={priceRange}
-                    onValueChange={setPriceRange}
-                    max={100}
-                    step={5}
-                    className="mb-2"
-                    data-testid="filter-price-slider"
-                />
-                <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>${priceRange[0]}</span>
-                    <span>${priceRange[1]}+</span>
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
                 </div>
             </div>
 
@@ -306,7 +264,6 @@ export default function BrowsePage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-<<<<<<< HEAD
                         <div className="w-full lg:w-96">
                             <Input
                                 type="text"
@@ -330,9 +287,6 @@ export default function BrowsePage() {
                                 <SelectItem value="women's clothing">Women's Clothing</SelectItem>
                             </SelectContent>
                         </Select>
-
-=======
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
                         {/* Search */}
                         <form onSubmit={handleSearch} className="flex gap-2">
                             <div className="relative">
@@ -380,7 +334,6 @@ export default function BrowsePage() {
                     </div>
                 </div>
 
-<<<<<<< HEAD
                 <section className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-heading font-bold">Store Products</h2>
@@ -424,9 +377,6 @@ export default function BrowsePage() {
                         </div>
                     )}
                 </section>
-
-=======
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
                 <div className="flex gap-8">
                     {/* Desktop Sidebar Filters */}
                     <aside className="hidden lg:block w-64 flex-shrink-0" data-testid="filter-sidebar">
@@ -479,11 +429,7 @@ export default function BrowsePage() {
                                                         {item.description}
                                                     </p>
                                                     <div className="flex items-center justify-between">
-<<<<<<< HEAD
                                                         <span className="font-bold text-primary">₹{item.price_per_day}/day</span>
-=======
-                                                        <span className="font-bold text-primary">${item.price_per_day}/day</span>
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
                                                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                                             <Star className="w-4 h-4 text-amber-500" weight="fill" />
                                                             <span>{item.avg_rating?.toFixed(1) || '0.0'}</span>

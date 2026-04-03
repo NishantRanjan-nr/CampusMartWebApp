@@ -32,6 +32,16 @@ export default function AuthPage() {
         return null;
     }
 
+    const getAuthErrorMessage = (error, fallbackMessage) => {
+        if (error?.response?.data?.detail) {
+            return error.response.data.detail;
+        }
+        if (error?.message === 'Network Error') {
+            return 'Cannot connect to backend. Please start the backend server and try again.';
+        }
+        return fallbackMessage;
+    };
+
     const handleLogin = async (e) => {
         e.preventDefault();
         if (!loginEmail || !loginPassword) {
@@ -45,20 +55,16 @@ export default function AuthPage() {
             toast.success('Welcome back!');
             navigate('/dashboard');
         } catch (error) {
-            toast.error(error.response?.data?.detail || 'Invalid credentials');
+            toast.error(getAuthErrorMessage(error, 'Invalid credentials'));
         } finally {
             setLoading(false);
         }
     };
 
     const handleSignup = async (e) => {
-<<<<<<< HEAD
         if (e && e.preventDefault) {
             e.preventDefault();
         }
-=======
-        e.preventDefault();
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
         if (!signupName || !signupEmail || !signupPassword) {
             toast.error('Please fill in all required fields');
             return;
@@ -75,7 +81,7 @@ export default function AuthPage() {
             toast.success('Account created successfully!');
             navigate('/dashboard');
         } catch (error) {
-            toast.error(error.response?.data?.detail || 'Failed to create account');
+            toast.error(getAuthErrorMessage(error, 'Failed to create account'));
         } finally {
             setLoading(false);
         }
@@ -171,11 +177,7 @@ export default function AuthPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-<<<<<<< HEAD
                                 <form className="space-y-4" onSubmit={handleSignup}>
-=======
-                                <form onSubmit={handleSignup} className="space-y-4">
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
                                     <div className="space-y-2">
                                         <Label htmlFor="signup-name">Full Name</Label>
                                         <Input
@@ -232,18 +234,10 @@ export default function AuthPage() {
                                         />
                                     </div>
                                     <Button
-<<<<<<< HEAD
                                              type="submit"
                                             className="w-full"
                                             disabled={loading}
                                                 >
-=======
-                                        type="submit"
-                                        className="w-full"
-                                        disabled={loading}
-                                        data-testid="signup-submit-button"
-                                    >
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
                                         {loading ? 'Creating account...' : 'Create Account'}
                                     </Button>
                                 </form>

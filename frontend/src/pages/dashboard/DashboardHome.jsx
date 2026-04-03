@@ -18,11 +18,7 @@ import { motion } from 'framer-motion';
 import {
     Package,
     ShoppingCart,
-<<<<<<< HEAD
     CurrencyInr,
-=======
-    CurrencyDollar,
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
     Clock,
     ArrowRight,
     Plus
@@ -85,13 +81,8 @@ export default function DashboardHome() {
         },
         {
             title: 'Total Earnings',
-<<<<<<< HEAD
             value: `₹${stats.total_earnings.toFixed(2)}`,
             icon: CurrencyInr,
-=======
-            value: `$${stats.total_earnings.toFixed(2)}`,
-            icon: CurrencyDollar,
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
             color: 'text-amber-500',
             bgColor: 'bg-amber-500/10'
         },

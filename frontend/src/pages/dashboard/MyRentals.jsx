@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/button';
@@ -134,11 +134,7 @@ export default function MyRentals() {
                                     {format(new Date(booking.start_date), 'MMM d')} - {format(new Date(booking.end_date), 'MMM d')}
                                 </span>
                                 <span className="font-medium text-foreground">
-<<<<<<< HEAD
-                                    ₹{booking.total_price.toFixed(2)}
-=======
-                                    ${booking.total_price.toFixed(2)}
->>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
+                                    â‚¹{booking.total_price.toFixed(2)}
                                 </span>
                             </div>
 
