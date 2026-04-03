@@ -125,7 +125,11 @@ export default function LandingPage() {
                                     placeholder="Search electronics, clothes..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
+<<<<<<< HEAD
                                     className="pl-12 h-12 bg-white border-0 text-black placeholder:text-slate-500"
+=======
+                                    className="pl-12 h-12 bg-white border-0 text-foreground"
+>>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
                                     data-testid="hero-search-input"
                                 />
                             </div>
@@ -259,7 +263,11 @@ export default function LandingPage() {
                                                     {item.title}
                                                 </h3>
                                                 <div className="flex items-center justify-between text-sm">
+<<<<<<< HEAD
                                                     <span className="font-bold text-primary">₹{item.price_per_day}/day</span>
+=======
+                                                    <span className="font-bold text-primary">${item.price_per_day}/day</span>
+>>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
                                                     <div className="flex items-center gap-1 text-muted-foreground">
                                                         <Star className="w-4 h-4 text-amber-500" weight="fill" />
                                                         <span>{item.avg_rating?.toFixed(1) || '0.0'}</span>

@@ -137,7 +137,11 @@ export default function MyListings() {
                                         <div className="flex-1 min-w-0">
                                             <h3 className="font-heading font-semibold truncate">{item.title}</h3>
                                             <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+<<<<<<< HEAD
                                                 <span className="font-medium text-primary">₹{item.price_per_day}/day</span>
+=======
+                                                <span className="font-medium text-primary">${item.price_per_day}/day</span>
+>>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
                                                 <span>•</span>
                                                 <span className="flex items-center gap-1">
                                                     <Star className="w-3 h-3 text-amber-500" weight="fill" />

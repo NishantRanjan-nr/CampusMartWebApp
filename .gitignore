@@ -87,3 +87,10 @@ frontend/node_modules/.cache/default-development/1.pack
 *.env
 *.env.*
 frontend/node_modules/.cache/default-development/2.pack
+<<<<<<< HEAD
+=======
+-e 
+# Environment files
+*.env
+*.env.*
+>>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a

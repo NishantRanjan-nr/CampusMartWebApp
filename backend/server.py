@@ -5,7 +5,10 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+<<<<<<< HEAD
 import traceback
+=======
+>>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
@@ -30,6 +33,7 @@ JWT_EXPIRATION_HOURS = 24
 # Create the main app with redirect_slashes enabled (default behavior)
 app = FastAPI(title="CampusMart API")
 
+<<<<<<< HEAD
 # ✅ CORS (FIXED + SAFE FOR DEV)
 app.add_middleware(
     CORSMiddleware,
@@ -46,6 +50,12 @@ app.add_middleware(
 security = HTTPBearer()
 
 # Routers
+=======
+# Security
+security = HTTPBearer()
+
+# Create routers
+>>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
 api_router = APIRouter(prefix="/api")
 auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
 items_router = APIRouter(prefix="/items", tags=["Items"])
@@ -228,6 +238,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 @auth_router.post("/signup", response_model=TokenResponse)
 async def signup(user_data: UserCreate):
+<<<<<<< HEAD
     try:
         print('signup called with:', user_data.dict())
         # Check if user exists
@@ -263,6 +274,37 @@ async def signup(user_data: UserCreate):
         print('signup error:', e)
         traceback.print_exc()
         raise
+=======
+    # Check if user exists
+    existing = await db.users.find_one({"email": user_data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    user_id = str(uuid.uuid4())
+    user = {
+        "id": user_id,
+        "email": user_data.email,
+        "password": hash_password(user_data.password),
+        "name": user_data.name,
+        "location": user_data.location or "Campus",
+        "avatar": None,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.insert_one(user)
+    token = create_token(user_id)
+    
+    user_response = UserResponse(
+        id=user["id"],
+        email=user["email"],
+        name=user["name"],
+        location=user["location"],
+        created_at=user["created_at"],
+        avatar=user["avatar"]
+    )
+    
+    return TokenResponse(access_token=token, user=user_response)
+>>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
 
 @auth_router.post("/login", response_model=TokenResponse)
 async def login(credentials: UserLogin):
@@ -294,6 +336,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         avatar=current_user.get("avatar")
     )
 
+<<<<<<< HEAD
 # Backward-compatible endpoint for requested /register path
 @app.post("/register", response_model=TokenResponse)
 async def register_main(user_data: UserCreate):
@@ -305,6 +348,8 @@ async def register_main(user_data: UserCreate):
         traceback.print_exc()
         raise
 
+=======
+>>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
 @auth_router.put("/profile")
 async def update_profile(
     name: Optional[str] = None,
@@ -712,6 +757,18 @@ api_router.include_router(messages_router)
 api_router.include_router(reviews_router)
 app.include_router(api_router)
 
+<<<<<<< HEAD
+=======
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+>>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,

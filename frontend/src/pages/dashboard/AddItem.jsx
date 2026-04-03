@@ -208,7 +208,11 @@ export default function AddItem() {
                                 <h3 className="font-heading font-semibold">Pricing</h3>
                                 <div className="grid sm:grid-cols-2 gap-4">
                                     <div>
+<<<<<<< HEAD
                                         <Label htmlFor="price_per_day">Price per Day (₹) *</Label>
+=======
+                                        <Label htmlFor="price_per_day">Price per Day ($) *</Label>
+>>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
                                         <Input
                                             id="price_per_day"
                                             name="price_per_day"
@@ -223,7 +227,11 @@ export default function AddItem() {
                                         />
                                     </div>
                                     <div>
+<<<<<<< HEAD
                                         <Label htmlFor="deposit">Deposit (₹) *</Label>
+=======
+                                        <Label htmlFor="deposit">Deposit ($) *</Label>
+>>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
                                         <Input
                                             id="deposit"
                                             name="deposit"

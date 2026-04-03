@@ -57,11 +57,14 @@ export default function PublicLayout() {
 
                         {/* Nav Items */}
                         <nav className="flex items-center gap-2 lg:gap-4">
+<<<<<<< HEAD
                             <Link to="/" data-testid="home-link">
                                 <Button variant="ghost" size="sm" className="hidden sm:flex">
                                     Home
                                 </Button>
                             </Link>
+=======
+>>>>>>> c5cc4d47a8b9320b68eaa3a56c0bc2ac66377a5a
                             <Link to="/browse" data-testid="browse-link">
                                 <Button variant="ghost" size="sm" className="hidden sm:flex">
                                     Browse
