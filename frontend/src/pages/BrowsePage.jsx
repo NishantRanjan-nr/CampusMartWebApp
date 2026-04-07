@@ -4,7 +4,6 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { Label } from '../components/ui/label';
-import { Slider } from '../components/ui/slider';
 import { Checkbox } from '../components/ui/checkbox';
 import {
     Select,
@@ -16,12 +15,9 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { MagnifyingGlass, Funnel, Star, MapPin, X } from '@phosphor-icons/react';
+import { MagnifyingGlass, Funnel, Star, MapPin } from '@phosphor-icons/react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-const PRICE_MIN = 0;
-const PRICE_MAX = 100;
-const PRICE_STEP = 1;
 
 export default function BrowsePage() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -32,7 +28,6 @@ export default function BrowsePage() {
     // Filters
     const [search, setSearch] = useState(searchParams.get('search') || '');
     const [category, setCategory] = useState(searchParams.get('category') || '');
-    const [maxPrice, setMaxPrice] = useState(PRICE_MAX);
 
     // Store products
     const [storeProducts, setStoreProducts] = useState([]);
@@ -63,6 +58,8 @@ export default function BrowsePage() {
                 matchesCategory = true;
             } else if (storeCategory === 'clothes') {
                 matchesCategory = productCategory.includes('clothing') || productCategory.includes('men') || productCategory.includes('women');
+            } else if (storeCategory === 'books') {
+                matchesCategory = productCategory.includes('book');
             } else {
                 matchesCategory = productCategory === storeCategory.toLowerCase();
             }
@@ -70,15 +67,7 @@ export default function BrowsePage() {
             return matchesSearch && matchesCategory;
         });
     }, [storeProducts, storeSearch, storeCategory]);
-    const [location, setLocation] = useState('');
     const [sortBy, setSortBy] = useState('newest');
-
-    const handleMaxPriceChange = (value) => {
-        if (!Array.isArray(value) || value.length !== 1) return;
-        const nextMax = Math.round(value[0]);
-        const clampedMax = Math.min(PRICE_MAX, Math.max(PRICE_MIN, nextMax));
-        setMaxPrice(clampedMax);
-    };
     useEffect(() => {
         fetchItems();
     }, [searchParams]);
@@ -115,8 +104,6 @@ export default function BrowsePage() {
 
             if (searchQuery) params.append('search', searchQuery);
             if (categoryQuery) params.append('category', categoryQuery);
-            if (maxPrice < PRICE_MAX) params.append('max_price', maxPrice);
-            if (location) params.append('location', location);
 
             const response = await axios.get(`${API}/items?${params.toString()}`);
             let fetchedItems = response.data;
@@ -163,8 +150,6 @@ export default function BrowsePage() {
     const clearFilters = () => {
         setSearch('');
         setCategory('');
-        setMaxPrice(PRICE_MAX);
-        setLocation('');
         setSearchParams({});
     };
 
@@ -201,50 +186,16 @@ export default function BrowsePage() {
                         />
                         <label htmlFor="cat-clothes" className="text-sm">Clothes</label>
                     </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox
+                            id="cat-books"
+                            checked={category === 'books'}
+                            onCheckedChange={(checked) => handleCategoryChange(checked ? 'books' : '')}
+                            data-testid="filter-category-books"
+                        />
+                        <label htmlFor="cat-books" className="text-sm">Books</label>
+                    </div>
                 </div>
-            </div>
-
-            {/* Price Range */}
-            <div className="filter-section">
-                <Label className="text-sm font-semibold mb-3 block">Price per Day</Label>
-                <div className="relative z-10 pointer-events-auto">
-                    <Slider
-                        value={[maxPrice]}
-                        onValueChange={handleMaxPriceChange}
-                        min={PRICE_MIN}
-                        max={PRICE_MAX}
-                        step={PRICE_STEP}
-                        className="mb-2"
-                        data-testid="filter-price-slider"
-                    />
-                </div>
-                <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>₹{PRICE_MIN}</span>
-                    <span>₹{maxPrice}+</span>
-                </div>
-            </div>
-
-            {/* Location */}
-            <div className="filter-section">
-                <Label className="text-sm font-semibold mb-3 block">Location</Label>
-                <Input
-                    type="text"
-                    placeholder="Search location..."
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="h-9"
-                    data-testid="filter-location-input"
-                />
-            </div>
-
-            {/* Apply/Clear */}
-            <div className="flex gap-2">
-                <Button onClick={fetchItems} className="flex-1" data-testid="filter-apply-button">
-                    Apply Filters
-                </Button>
-                <Button variant="outline" onClick={clearFilters} data-testid="filter-clear-button">
-                    <X className="w-4 h-4" />
-                </Button>
             </div>
         </div>
     );
@@ -282,6 +233,7 @@ export default function BrowsePage() {
                             <SelectContent>
                                 <SelectItem value="all">All Categories</SelectItem>
                                 <SelectItem value="electronics">Electronics</SelectItem>
+                                <SelectItem value="books">Books</SelectItem>
                                 <SelectItem value="jewelery">Jewelery</SelectItem>
                                 <SelectItem value="men's clothing">Men's Clothing</SelectItem>
                                 <SelectItem value="women's clothing">Women's Clothing</SelectItem>

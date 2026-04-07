@@ -46,7 +46,7 @@ export default function PublicLayout() {
                                 <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                                 <Input
                                     type="text"
-                                    placeholder="Search electronics, clothes..."
+                                    placeholder="Search electronics, clothes, books..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="pl-10 pr-4 h-10 bg-secondary/50 border-0 focus-visible:ring-primary"
@@ -158,7 +158,7 @@ export default function PublicLayout() {
                                 <span className="font-heading font-bold text-xl">CampusMart</span>
                             </div>
                             <p className="text-sm text-muted-foreground">
-                                The student marketplace for renting electronics and clothes.
+                                The student marketplace for renting electronics, clothes, and books.
                             </p>
                         </div>
                         <div>
@@ -166,6 +166,7 @@ export default function PublicLayout() {
                             <ul className="space-y-2 text-sm text-muted-foreground">
                                 <li><Link to="/browse?category=electronics" className="hover:text-foreground transition-colors">Electronics</Link></li>
                                 <li><Link to="/browse?category=clothes" className="hover:text-foreground transition-colors">Clothes</Link></li>
+                                <li><Link to="/browse?category=books" className="hover:text-foreground transition-colors">Books</Link></li>
                                 <li><Link to="/browse" className="hover:text-foreground transition-colors">Browse All</Link></li>
                             </ul>
                         </div>

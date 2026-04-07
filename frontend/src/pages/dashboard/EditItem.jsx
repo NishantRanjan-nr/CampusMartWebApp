@@ -211,6 +211,7 @@ export default function EditItem() {
                                             <SelectContent>
                                                 <SelectItem value="electronics">Electronics</SelectItem>
                                                 <SelectItem value="clothes">Clothes</SelectItem>
+                                                <SelectItem value="books">Books</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>

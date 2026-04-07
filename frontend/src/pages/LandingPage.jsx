@@ -10,6 +10,7 @@ import {
     ArrowRight,
     Laptop,
     TShirt,
+    BookOpen,
     Star,
     MapPin,
     Shield,
@@ -33,6 +34,13 @@ const categories = [
         icon: TShirt,
         image: 'https://images.pexels.com/photos/5698856/pexels-photo-5698856.jpeg',
         description: 'Formal wear, streetwear, accessories'
+    },
+    {
+        id: 'books',
+        name: 'Books',
+        icon: BookOpen,
+        image: 'https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg',
+        description: 'Textbooks, novels, and study material'
     }
 ];
 
@@ -108,7 +116,7 @@ export default function LandingPage() {
                             transition={{ duration: 0.5, delay: 0.2 }}
                             className="text-lg text-white/80 mb-8 max-w-lg"
                         >
-                            CampusMart connects students for affordable rentals. From electronics to event outfits, find what you need or earn from what you own.
+                            CampusMart connects students for affordable rentals. From electronics to event outfits and books, find what you need or earn from what you own.
                         </motion.p>
 
                         <motion.form
@@ -122,7 +130,7 @@ export default function LandingPage() {
                                 <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                                 <Input
                                     type="text"
-                                    placeholder="Search electronics, clothes..."
+                                    placeholder="Search electronics, clothes, books..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="pl-12 h-12 bg-white border-0 text-black placeholder:text-slate-500"
@@ -165,7 +173,7 @@ export default function LandingPage() {
                         </p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
+                    <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
                         {categories.map((category, index) => (
                             <motion.div
                                 key={category.id}

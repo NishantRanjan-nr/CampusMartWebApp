@@ -21,7 +21,8 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const defaultImages = {
     electronics: 'https://images.unsplash.com/photo-1760462788374-fe0d2d4ba4d1?w=800',
-    clothes: 'https://images.unsplash.com/photo-1574089511111-14c8dbb77b2a?w=800'
+    clothes: 'https://images.unsplash.com/photo-1574089511111-14c8dbb77b2a?w=800',
+    books: 'https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg'
 };
 
 export default function AddItem() {
@@ -164,6 +165,7 @@ export default function AddItem() {
                                             <SelectContent>
                                                 <SelectItem value="electronics">Electronics</SelectItem>
                                                 <SelectItem value="clothes">Clothes</SelectItem>
+                                                <SelectItem value="books">Books</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
