@@ -32,20 +32,35 @@ JWT_EXPIRATION_HOURS = 24
 # Create the main app with redirect_slashes enabled (default behavior)
 app = FastAPI(title="CampusMart API")
 
-frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+def _normalize_origin(url: str) -> str:
+    return url.strip().rstrip("/")
 
-# ✅ CORS (FIXED FOR PROD & DEV)
+
+# Supports comma-separated frontend origins via FRONTEND_URLS.
+frontend_urls_raw = os.environ.get("FRONTEND_URLS", "")
+frontend_urls = [_normalize_origin(u) for u in frontend_urls_raw.split(",") if u.strip()]
+
+# Backward-compatible with existing single FRONTEND_URL.
+frontend_url = _normalize_origin(os.environ.get("FRONTEND_URL", "http://localhost:3000"))
+if frontend_url:
+    frontend_urls.append(frontend_url)
+
+allowed_origins = {
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://campusmartnr.me",
+    "https://www.campusmartnr.me",
+}
+allowed_origins.update(frontend_urls)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://campusmartnr.me",
-        frontend_url
-    ],
+    allow_origins=sorted(allowed_origins),
+    allow_origin_regex=r"https://.*\.onrender\.com",
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    max_age=86400,
 )
 
 # Security
