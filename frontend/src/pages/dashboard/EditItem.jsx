@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -16,15 +16,20 @@ import {
 import { toast } from 'sonner';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, X } from '@phosphor-icons/react';
+import { ArrowLeft, Plus, X, UploadSimple, Spinner, Link as LinkIcon } from '@phosphor-icons/react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_UPLOAD_PRESET = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET;
 
 export default function EditItem() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [showUrlInput, setShowUrlInput] = useState(false);
+    const fileInputRef = useRef(null);
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -74,6 +79,56 @@ export default function EditItem() {
 
     const handleSelectChange = (name, value) => {
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const uploadToCloudinary = async (file) => {
+        const cloudFormData = new FormData();
+        cloudFormData.append('file', file);
+        cloudFormData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+        const response = await axios.post(
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+            cloudFormData
+        );
+        return response.data.secure_url;
+    };
+
+    const handleFileUpload = async (e) => {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+
+        const remainingSlots = 5 - formData.images.length;
+        if (files.length > remainingSlots) {
+            toast.error(`You can only add ${remainingSlots} more image(s) (max 5)`);
+            return;
+        }
+
+        for (const file of files) {
+            if (file.size > 10 * 1024 * 1024) {
+                toast.error(`"${file.name}" is too large. Maximum size is 10MB.`);
+                return;
+            }
+        }
+
+        setUploading(true);
+        try {
+            const uploadPromises = files.map(file => uploadToCloudinary(file));
+            const urls = await Promise.all(uploadPromises);
+
+            setFormData(prev => ({
+                ...prev,
+                images: [...prev.images, ...urls]
+            }));
+            toast.success(`${files.length} image(s) uploaded successfully!`);
+        } catch (error) {
+            console.error('Upload error:', error);
+            toast.error('Failed to upload image. Please check your Cloudinary settings.');
+        } finally {
+            setUploading(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
     };
 
     const addImage = () => {
@@ -301,19 +356,71 @@ export default function EditItem() {
                             {/* Images */}
                             <div className="space-y-4">
                                 <h3 className="font-heading font-semibold">Images</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Upload up to 5 images from your device.
+                                </p>
 
+                                {/* Hidden file input */}
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileUpload}
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                    data-testid="file-upload-input"
+                                />
+
+                                {/* Upload buttons */}
                                 <div className="flex gap-2">
-                                    <Input
-                                        placeholder="Paste image URL..."
-                                        value={imageUrl}
-                                        onChange={(e) => setImageUrl(e.target.value)}
-                                        data-testid="image-url-input"
-                                    />
-                                    <Button type="button" variant="outline" onClick={addImage} data-testid="add-image-button">
-                                        <Plus className="w-4 h-4" />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploading || formData.images.length >= 5}
+                                        className="flex-1"
+                                        data-testid="upload-image-button"
+                                    >
+                                        {uploading ? (
+                                            <>
+                                                <Spinner className="w-4 h-4 mr-2 animate-spin" />
+                                                Uploading...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <UploadSimple className="w-4 h-4 mr-2" />
+                                                Upload from device
+                                            </>
+                                        )}
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setShowUrlInput(!showUrlInput)}
+                                        className="text-xs text-muted-foreground"
+                                    >
+                                        <LinkIcon className="w-3 h-3 mr-1" />
+                                        Paste URL
                                     </Button>
                                 </div>
 
+                                {/* URL input (toggle) */}
+                                {showUrlInput && (
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="Paste image URL..."
+                                            value={imageUrl}
+                                            onChange={(e) => setImageUrl(e.target.value)}
+                                            data-testid="image-url-input"
+                                        />
+                                        <Button type="button" variant="outline" onClick={addImage} data-testid="add-image-button">
+                                            <Plus className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {/* Image previews */}
                                 {formData.images.length > 0 && (
                                     <div className="grid grid-cols-5 gap-2">
                                         {formData.images.map((img, index) => (
@@ -330,6 +437,13 @@ export default function EditItem() {
                                         ))}
                                     </div>
                                 )}
+
+                                {/* Remaining slots indicator */}
+                                {formData.images.length > 0 && formData.images.length < 5 && (
+                                    <p className="text-xs text-muted-foreground">
+                                        {5 - formData.images.length} image slot(s) remaining
+                                    </p>
+                                )}
                             </div>
 
                             {/* Submit */}
@@ -344,7 +458,7 @@ export default function EditItem() {
                                 </Button>
                                 <Button
                                     type="submit"
-                                    disabled={saving}
+                                    disabled={saving || uploading}
                                     className="flex-1"
                                     data-testid="save-item-button"
                                 >
