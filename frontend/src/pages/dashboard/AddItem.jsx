@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import {
     Select,
     SelectContent,
@@ -15,7 +15,7 @@ import {
 import { toast } from 'sonner';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, X, Image, UploadSimple, Spinner, Link as LinkIcon } from '@phosphor-icons/react';
+import { ArrowLeft, Plus, X, UploadSimple, Spinner, Link as LinkIcon } from '@phosphor-icons/react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
@@ -97,7 +97,14 @@ export default function AddItem() {
             toast.success(`${files.length} image(s) uploaded successfully!`);
         } catch (error) {
             console.error('Upload error:', error);
-            toast.error('Failed to upload image. Please check your Cloudinary settings.');
+            const cloudinaryMsg = error.response?.data?.error?.message;
+            if (cloudinaryMsg) {
+                toast.error(`Upload failed: ${cloudinaryMsg}`);
+            } else if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+                toast.error('Cloudinary environment variables are not set. Check your .env file.');
+            } else {
+                toast.error('Failed to upload image. Please check your Cloudinary settings.');
+            }
         } finally {
             setUploading(false);
             // Reset file input so the same file can be selected again

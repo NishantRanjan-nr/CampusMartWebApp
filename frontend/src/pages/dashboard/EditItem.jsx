@@ -122,7 +122,14 @@ export default function EditItem() {
             toast.success(`${files.length} image(s) uploaded successfully!`);
         } catch (error) {
             console.error('Upload error:', error);
-            toast.error('Failed to upload image. Please check your Cloudinary settings.');
+            const cloudinaryMsg = error.response?.data?.error?.message;
+            if (cloudinaryMsg) {
+                toast.error(`Upload failed: ${cloudinaryMsg}`);
+            } else if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+                toast.error('Cloudinary environment variables are not set. Check your .env file.');
+            } else {
+                toast.error('Failed to upload image. Please check your Cloudinary settings.');
+            }
         } finally {
             setUploading(false);
             if (fileInputRef.current) {
