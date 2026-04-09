@@ -18,8 +18,6 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, X, UploadSimple, Spinner, Link as LinkIcon } from '@phosphor-icons/react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
-const CLOUDINARY_UPLOAD_PRESET = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET;
 
 const defaultImages = {
     electronics: 'https://images.unsplash.com/photo-1760462788374-fe0d2d4ba4d1?w=800',
@@ -55,16 +53,50 @@ export default function AddItem() {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const uploadToCloudinary = async (file) => {
-        const cloudFormData = new FormData();
-        cloudFormData.append('file', file);
-        cloudFormData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
 
-        const response = await axios.post(
-            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-            cloudFormData
-        );
-        return response.data.secure_url;
+    const compressImageToDataUrl = (file, maxDimension = 1600, quality = 0.8) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => {
+            const img = new window.Image();
+            img.onload = () => {
+                let { width, height } = img;
+                const scale = Math.min(1, maxDimension / Math.max(width, height));
+                width = Math.round(width * scale);
+                height = Math.round(height * scale);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Canvas context unavailable'));
+                    return;
+                }
+
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = reject;
+            img.src = reader.result;
+        };
+
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+
+    const prepareImageForListing = async (file) => {
+        if (file.type === 'image/gif' || file.type === 'image/svg+xml') {
+            return readFileAsDataUrl(file);
+        }
+        return compressImageToDataUrl(file);
     };
 
     const handleFileUpload = async (e) => {
@@ -87,24 +119,17 @@ export default function AddItem() {
 
         setUploading(true);
         try {
-            const uploadPromises = files.map(file => uploadToCloudinary(file));
+            const uploadPromises = files.map(file => prepareImageForListing(file));
             const urls = await Promise.all(uploadPromises);
 
             setFormData(prev => ({
                 ...prev,
                 images: [...prev.images, ...urls]
             }));
-            toast.success(`${files.length} image(s) uploaded successfully!`);
+            toast.success(`${files.length} image(s) added successfully!`);
         } catch (error) {
-            console.error('Upload error:', error);
-            const cloudinaryMsg = error.response?.data?.error?.message;
-            if (cloudinaryMsg) {
-                toast.error(`Upload failed: ${cloudinaryMsg}`);
-            } else if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-                toast.error('Cloudinary environment variables are not set. Check your .env file.');
-            } else {
-                toast.error('Failed to upload image. Please check your Cloudinary settings.');
-            }
+            console.error('Image processing error:', error);
+            toast.error('Failed to process image. Please try another file.');
         } finally {
             setUploading(false);
             // Reset file input so the same file can be selected again
