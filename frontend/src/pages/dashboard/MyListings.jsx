@@ -124,6 +124,15 @@ export default function MyListings() {
                                     />
                                     <Badge
                                         variant="secondary"
+                                        className={`absolute top-3 right-3 ${item.type === 'rent'
+                                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                            : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                                            }`}
+                                    >
+                                        {item.type === 'rent' ? 'For Rent' : 'For Sale'}
+                                    </Badge>
+                                    <Badge
+                                        variant="secondary"
                                         className={`absolute top-3 left-3 ${item.is_available
                                             ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                                             : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
@@ -137,13 +146,26 @@ export default function MyListings() {
                                         <div className="flex-1 min-w-0">
                                             <h3 className="font-heading font-semibold truncate">{item.title}</h3>
                                             <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                                                <span className="font-medium text-primary">₹{item.price_per_day}/day</span>
+                                                <span className="font-medium text-primary">
+                                                    {item.type === 'sell'
+                                                        ? `₹${item.price ?? 0}`
+                                                        : `₹${item.rentDetails?.pricePerDay ?? item.price_per_day ?? 0}/day`}
+                                                </span>
                                                 <span>•</span>
                                                 <span className="flex items-center gap-1">
                                                     <Star className="w-3 h-3 text-amber-500" weight="fill" />
                                                     {item.avg_rating?.toFixed(1) || '0.0'}
                                                 </span>
                                             </div>
+                                            {item.type === 'rent' && (
+                                                <p className="mt-1 text-xs font-medium text-muted-foreground">
+                                                    {(item.rentRequests || []).some((request) => request.status === 'approved')
+                                                        ? 'Rented'
+                                                        : (item.rentRequests || []).some((request) => request.status === 'pending') || item.rentDetails?.isAvailable === false
+                                                            ? 'Requested'
+                                                            : 'Available'}
+                                                </p>
+                                            )}
                                         </div>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>

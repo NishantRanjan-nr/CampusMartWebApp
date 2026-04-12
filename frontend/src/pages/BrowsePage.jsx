@@ -15,15 +15,24 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { MagnifyingGlass, Funnel, Star, MapPin } from '@phosphor-icons/react';
+import { MagnifyingGlass, Funnel } from '@phosphor-icons/react';
+import { toast } from 'sonner';
+import ProductCard from '../components/marketplace/ProductCard';
+import RentModal from '../components/marketplace/RentModal';
+import BuyModal from '../components/marketplace/BuyModal';
+import { useAuth } from '../context/AuthContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function BrowsePage() {
+    const { user } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterOpen, setFilterOpen] = useState(false);
+    const [rentModalOpen, setRentModalOpen] = useState(false);
+    const [buyModalOpen, setBuyModalOpen] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState(null);
 
     // Filters
     const [search, setSearch] = useState(searchParams.get('search') || '');
@@ -105,14 +114,31 @@ export default function BrowsePage() {
             if (searchQuery) params.append('search', searchQuery);
             if (categoryQuery) params.append('category', categoryQuery);
 
-            const response = await axios.get(`${API}/items?${params.toString()}`);
-            let fetchedItems = response.data;
+            const queryString = params.toString();
+            const productUrl = `${API}/products${queryString ? `?${queryString}` : ''}`;
+            const itemUrl = `${API}/items${queryString ? `?${queryString}` : ''}`;
+
+            let fetchedItems = [];
+            try {
+                const response = await axios.get(productUrl);
+                fetchedItems = response.data;
+            } catch (error) {
+                const fallbackResponse = await axios.get(itemUrl);
+                fetchedItems = fallbackResponse.data;
+            }
+
+            const listingPrice = (item) => {
+                if (item.type === 'sell') {
+                    return item.price ?? 0;
+                }
+                return item.rentDetails?.pricePerDay ?? item.price_per_day ?? 0;
+            };
 
             // Sort items
             if (sortBy === 'price_low') {
-                fetchedItems.sort((a, b) => a.price_per_day - b.price_per_day);
+                fetchedItems.sort((a, b) => listingPrice(a) - listingPrice(b));
             } else if (sortBy === 'price_high') {
-                fetchedItems.sort((a, b) => b.price_per_day - a.price_per_day);
+                fetchedItems.sort((a, b) => listingPrice(b) - listingPrice(a));
             } else if (sortBy === 'rating') {
                 fetchedItems.sort((a, b) => b.avg_rating - a.avg_rating);
             }
@@ -120,6 +146,7 @@ export default function BrowsePage() {
             setItems(fetchedItems);
         } catch (error) {
             console.error('Failed to fetch items:', error);
+            toast.error('Could not load listings. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -151,6 +178,56 @@ export default function BrowsePage() {
         setSearch('');
         setCategory('');
         setSearchParams({});
+    };
+
+    const handleRentClick = (product) => {
+        setSelectedProduct(product);
+        setRentModalOpen(true);
+    };
+
+    const handleBuyNow = (product) => {
+        setSelectedProduct(product);
+        setBuyModalOpen(true);
+    };
+
+    const appendLocalRequest = (requestPayload) => {
+        if (!selectedProduct) return;
+
+        setItems((prev) => prev.map((item) => {
+            if (item.id !== selectedProduct.id) return item;
+            const nextRequests = [...(item.requests || []), requestPayload];
+            return {
+                ...item,
+                requests: nextRequests,
+            };
+        }));
+    };
+
+    const handleBuyRequest = async ({ type, paymentMethod }) => {
+        if (!selectedProduct) return;
+
+        const response = await axios.post(`${API}/request/${selectedProduct.id}`, {
+            type,
+            paymentMethod,
+        });
+
+        appendLocalRequest(response.data.request);
+        toast.success('Purchase request sent. Waiting for seller approval.');
+    };
+
+    const handleRentRequest = async ({ type, paymentMethod, startDate, endDate }) => {
+        if (!selectedProduct) return;
+
+        const response = await axios.post(`${API}/request/${selectedProduct.id}`, {
+            type,
+            paymentMethod,
+            startDate,
+            endDate,
+        });
+
+        appendLocalRequest(response.data.request);
+
+        toast.success('Rent request submitted');
     };
 
     const FilterContent = () => (
@@ -361,40 +438,12 @@ export default function BrowsePage() {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3, delay: index * 0.05 }}
                                     >
-                                        <Link to={`/item/${item.id}`} data-testid={`item-card-${item.id}`}>
-                                            <Card className="group overflow-hidden card-hover">
-                                                <div className="aspect-square overflow-hidden bg-muted relative">
-                                                    <img
-                                                        src={item.images?.[0] || 'https://images.unsplash.com/photo-1760462788374-fe0d2d4ba4d1?w=400'}
-                                                        alt={item.title}
-                                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                    />
-                                                    <span className="absolute top-3 left-3 px-2 py-1 rounded-md bg-background/90 backdrop-blur-sm text-xs font-medium capitalize">
-                                                        {item.category}
-                                                    </span>
-                                                </div>
-                                                <CardContent className="p-4">
-                                                    <h3 className="font-heading font-semibold text-lg mb-1 truncate group-hover:text-primary transition-colors">
-                                                        {item.title}
-                                                    </h3>
-                                                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                                                        {item.description}
-                                                    </p>
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-bold text-primary">₹{item.price_per_day}/day</span>
-                                                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                                            <Star className="w-4 h-4 text-amber-500" weight="fill" />
-                                                            <span>{item.avg_rating?.toFixed(1) || '0.0'}</span>
-                                                            <span>({item.review_count || 0})</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                                                        <MapPin className="w-3 h-3" />
-                                                        <span>{item.location}</span>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        </Link>
+                                        <ProductCard
+                                            product={item}
+                                            onRequestRent={handleRentClick}
+                                            onBuyNow={handleBuyNow}
+                                            currentUserId={user?.id}
+                                        />
                                     </motion.div>
                                 ))}
                             </div>
@@ -415,6 +464,20 @@ export default function BrowsePage() {
                     </div>
                 </div>
             </div>
+
+            <RentModal
+                open={rentModalOpen}
+                onOpenChange={setRentModalOpen}
+                product={selectedProduct}
+                onSubmit={handleRentRequest}
+            />
+
+            <BuyModal
+                open={buyModalOpen}
+                onOpenChange={setBuyModalOpen}
+                product={selectedProduct}
+                onSubmit={handleBuyRequest}
+            />
         </div>
     );
 }

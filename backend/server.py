@@ -8,7 +8,7 @@ import logging
 import traceback
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
-from typing import List, Optional
+from typing import List, Optional, Literal
 import uuid
 from datetime import datetime, timezone, timedelta
 import bcrypt
@@ -70,6 +70,7 @@ security = HTTPBearer()
 api_router = APIRouter(prefix="/api")
 auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
 items_router = APIRouter(prefix="/items", tags=["Items"])
+products_router = APIRouter(prefix="/products", tags=["Products"])
 booking_router = APIRouter(prefix="/bookings", tags=["Bookings"])
 messages_router = APIRouter(prefix="/messages", tags=["Messages"])
 reviews_router = APIRouter(prefix="/reviews", tags=["Reviews"])
@@ -102,21 +103,82 @@ class TokenResponse(BaseModel):
     user: UserResponse
 
 # Item Models
+class RentDetails(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    price_per_day: float = Field(..., alias="pricePerDay")
+    is_available: bool = Field(True, alias="isAvailable")
+
+class RentRequestEntry(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    user_id: str = Field(..., alias="userId")
+    start_date: str = Field(..., alias="startDate")
+    end_date: str = Field(..., alias="endDate")
+    status: Literal["pending", "approved", "rejected"] = "pending"
+
+class RentRequestCreate(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    start_date: str = Field(..., alias="startDate")
+    end_date: str = Field(..., alias="endDate")
+
+class ProductRequestEntry(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    request_id: str = Field(..., alias="requestId")
+    buyer_id: str = Field(..., alias="buyerId")
+    buyer_name: Optional[str] = Field(default=None, alias="buyerName")
+    type: Literal["buy", "rent"]
+    payment_method: Literal["meet"] = Field("meet", alias="paymentMethod")
+    status: Literal["pending", "approved", "rejected"] = "pending"
+    start_date: Optional[str] = Field(default=None, alias="startDate")
+    end_date: Optional[str] = Field(default=None, alias="endDate")
+    created_at: str = Field(..., alias="createdAt")
+
+class ProductRequestCreate(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    type: Literal["buy", "rent"]
+    payment_method: Literal["meet"] = Field("meet", alias="paymentMethod")
+    start_date: Optional[str] = Field(default=None, alias="startDate")
+    end_date: Optional[str] = Field(default=None, alias="endDate")
+
+class ProductRequestDecision(BaseModel):
+    status: Literal["approved", "rejected"]
+
+class SellerRequestResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    request_id: str = Field(..., alias="requestId")
+    product_id: str = Field(..., alias="productId")
+    product_title: str = Field(..., alias="productTitle")
+    buyer_id: str = Field(..., alias="buyerId")
+    buyer_name: Optional[str] = Field(default=None, alias="buyerName")
+    type: Literal["buy", "rent"]
+    payment_method: Literal["meet"] = Field("meet", alias="paymentMethod")
+    status: Literal["pending", "approved", "rejected"]
+    start_date: Optional[str] = Field(default=None, alias="startDate")
+    end_date: Optional[str] = Field(default=None, alias="endDate")
+    created_at: str = Field(..., alias="createdAt")
+
 class ItemCreate(BaseModel):
     title: str
     description: str
     category: str  # "electronics" or "clothes"
-    price_per_day: float
-    deposit: float
+    type: Literal["sell", "rent"] = "rent"
+    price: Optional[float] = None
+    rent_details: Optional[RentDetails] = Field(default=None, alias="rentDetails")
+    price_per_day: Optional[float] = None
+    deposit: Optional[float] = 0.0
     location: str
     images: List[str] = []
     condition: str = "Good"
     size: Optional[str] = None  # For clothes
+    is_available: Optional[bool] = True
 
 class ItemUpdate(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
     title: Optional[str] = None
     description: Optional[str] = None
     category: Optional[str] = None
+    type: Optional[Literal["sell", "rent"]] = None
+    price: Optional[float] = None
+    rent_details: Optional[RentDetails] = Field(default=None, alias="rentDetails")
     price_per_day: Optional[float] = None
     deposit: Optional[float] = None
     location: Optional[str] = None
@@ -124,9 +186,11 @@ class ItemUpdate(BaseModel):
     condition: Optional[str] = None
     size: Optional[str] = None
     is_available: Optional[bool] = None
+    rent_requests: Optional[List[RentRequestEntry]] = Field(default=None, alias="rentRequests")
+    requests: Optional[List[ProductRequestEntry]] = None
 
 class ItemResponse(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: str
     owner_id: str
     owner_name: str
@@ -134,8 +198,13 @@ class ItemResponse(BaseModel):
     title: str
     description: str
     category: str
-    price_per_day: float
-    deposit: float
+    type: Literal["sell", "rent"] = "rent"
+    price: Optional[float] = None
+    rent_details: Optional[RentDetails] = Field(default=None, alias="rentDetails")
+    rent_requests: List[RentRequestEntry] = Field(default_factory=list, alias="rentRequests")
+    requests: List[ProductRequestEntry] = Field(default_factory=list)
+    price_per_day: Optional[float] = None
+    deposit: Optional[float] = 0.0
     location: str
     images: List[str]
     condition: str
@@ -244,6 +313,68 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+def _normalize_item_payload(item_data: ItemCreate) -> dict:
+    listing_type = item_data.type
+
+    effective_price_per_day = item_data.price_per_day
+    if item_data.rent_details:
+        effective_price_per_day = item_data.rent_details.price_per_day
+
+    if listing_type == "rent":
+        if effective_price_per_day is None:
+            raise HTTPException(status_code=422, detail="Rent items require pricePerDay")
+        rent_details = {
+            "pricePerDay": float(effective_price_per_day),
+            "isAvailable": item_data.rent_details.is_available if item_data.rent_details else bool(item_data.is_available),
+        }
+        price_value = None
+        is_available = rent_details["isAvailable"]
+    else:
+        if item_data.price is None:
+            raise HTTPException(status_code=422, detail="Sell items require price")
+        rent_details = None
+        price_value = float(item_data.price)
+        effective_price_per_day = None
+        is_available = bool(item_data.is_available)
+
+    return {
+        "type": listing_type,
+        "price": price_value,
+        "rentDetails": rent_details,
+        "rentRequests": [],
+        "requests": [],
+        "price_per_day": float(effective_price_per_day) if effective_price_per_day is not None else None,
+        "is_available": is_available,
+    }
+
+def _apply_item_update_payload(existing_item: dict, update_data: dict) -> dict:
+    updated = dict(existing_item)
+    updated.update(update_data)
+
+    # Keep backward-compatible fields in sync.
+    if "rentDetails" in updated and updated["rentDetails"]:
+        updated["price_per_day"] = updated["rentDetails"].get("pricePerDay")
+        updated["is_available"] = updated["rentDetails"].get("isAvailable", updated.get("is_available", True))
+
+    if updated.get("type", "rent") == "sell":
+        updated["rentDetails"] = None
+        updated["price_per_day"] = None
+    elif updated.get("type", "rent") == "rent" and not updated.get("rentDetails"):
+        fallback_price = updated.get("price_per_day")
+        if fallback_price is not None:
+            updated["rentDetails"] = {
+                "pricePerDay": float(fallback_price),
+                "isAvailable": updated.get("is_available", True),
+            }
+
+    if "rentRequests" not in updated or updated["rentRequests"] is None:
+        updated["rentRequests"] = []
+
+    if "requests" not in updated or updated["requests"] is None:
+        updated["requests"] = []
+
+    return updated
 
 # ===================== AUTH ROUTES =====================
 
@@ -364,6 +495,7 @@ async def update_profile(
 @items_router.post("", response_model=ItemResponse)
 async def create_item(item_data: ItemCreate, current_user: dict = Depends(get_current_user)):
     item_id = str(uuid.uuid4())
+    normalized = _normalize_item_payload(item_data)
     item = {
         "id": item_id,
         "owner_id": current_user["id"],
@@ -372,13 +504,17 @@ async def create_item(item_data: ItemCreate, current_user: dict = Depends(get_cu
         "title": item_data.title,
         "description": item_data.description,
         "category": item_data.category,
-        "price_per_day": item_data.price_per_day,
-        "deposit": item_data.deposit,
+        "type": normalized["type"],
+        "price": normalized["price"],
+        "rentDetails": normalized["rentDetails"],
+        "rentRequests": normalized["rentRequests"],
+        "price_per_day": normalized["price_per_day"],
+        "deposit": item_data.deposit or 0.0,
         "location": item_data.location,
         "images": item_data.images if item_data.images else ["https://images.unsplash.com/photo-1760462788374-fe0d2d4ba4d1?w=400"],
         "condition": item_data.condition,
         "size": item_data.size,
-        "is_available": True,
+        "is_available": normalized["is_available"],
         "avg_rating": 0.0,
         "review_count": 0,
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -401,13 +537,16 @@ async def get_items(
     
     if category:
         query["category"] = category
-    if min_price is not None:
-        query["price_per_day"] = {"$gte": min_price}
-    if max_price is not None:
-        if "price_per_day" in query:
-            query["price_per_day"]["$lte"] = max_price
-        else:
-            query["price_per_day"] = {"$lte": max_price}
+    if min_price is not None or max_price is not None:
+        price_query = {}
+        if min_price is not None:
+            price_query["$gte"] = min_price
+        if max_price is not None:
+            price_query["$lte"] = max_price
+        query["$or"] = [
+            {"price": price_query},
+            {"price_per_day": price_query},
+        ]
     if location:
         query["location"] = {"$regex": location, "$options": "i"}
     if search:
@@ -444,7 +583,8 @@ async def update_item(item_id: str, item_data: ItemUpdate, current_user: dict = 
     if item["owner_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    update_data = {k: v for k, v in item_data.model_dump().items() if v is not None}
+    update_data = {k: v for k, v in item_data.model_dump(by_alias=True).items() if v is not None}
+    update_data = _apply_item_update_payload(item, update_data)
     if update_data:
         await db.items.update_one({"id": item_id}, {"$set": update_data})
     
@@ -462,6 +602,185 @@ async def delete_item(item_id: str, current_user: dict = Depends(get_current_use
     await db.items.delete_one({"id": item_id})
     return {"message": "Item deleted"}
 
+@products_router.post("", response_model=ItemResponse)
+async def create_product(product_data: ItemCreate, current_user: dict = Depends(get_current_user)):
+    return await create_item(product_data, current_user)
+
+@products_router.get("", response_model=List[ItemResponse])
+async def get_products(
+    category: Optional[str] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    location: Optional[str] = None,
+    search: Optional[str] = None,
+    limit: int = 50,
+    skip: int = 0
+):
+    return await get_items(category, min_price, max_price, location, search, limit, skip)
+
+@api_router.post("/rent-request/{product_id}")
+async def create_rent_request(
+    product_id: str,
+    request_data: RentRequestCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    item = await db.items.find_one({"id": product_id}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    if item.get("type", "rent") != "rent":
+        raise HTTPException(status_code=400, detail="Rent requests are only allowed for rent listings")
+
+    if item.get("owner_id") == current_user["id"]:
+        raise HTTPException(status_code=400, detail="Cannot request rent for your own listing")
+
+    start_dt = datetime.fromisoformat(request_data.start_date.replace("Z", "+00:00"))
+    end_dt = datetime.fromisoformat(request_data.end_date.replace("Z", "+00:00"))
+    if end_dt <= start_dt:
+        raise HTTPException(status_code=400, detail="endDate must be after startDate")
+
+    rent_requests = item.get("rentRequests", [])
+    rent_request = {
+        "userId": current_user["id"],
+        "startDate": request_data.start_date,
+        "endDate": request_data.end_date,
+        "status": "pending",
+    }
+    rent_requests.append(rent_request)
+
+    update_payload = {
+        "rentRequests": rent_requests,
+        "is_available": False,
+    }
+
+    rent_details = item.get("rentDetails")
+    if rent_details:
+        rent_details["isAvailable"] = False
+        update_payload["rentDetails"] = rent_details
+
+    await db.items.update_one({"id": product_id}, {"$set": update_payload})
+
+    return {
+        "message": "Rent request submitted",
+        "productId": product_id,
+        "request": rent_request,
+    }
+
+@api_router.post("/request/{product_id}")
+async def create_product_request(
+    product_id: str,
+    request_data: ProductRequestCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    item = await db.items.find_one({"id": product_id}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    if item.get("owner_id") == current_user["id"]:
+        raise HTTPException(status_code=400, detail="Cannot request your own product")
+
+    if request_data.type == "rent" and item.get("type", "rent") != "rent":
+        raise HTTPException(status_code=400, detail="Rent requests are only allowed for rent listings")
+
+    if request_data.type == "rent":
+        if not request_data.start_date or not request_data.end_date:
+            raise HTTPException(status_code=422, detail="Rent request requires startDate and endDate")
+        start_dt = datetime.fromisoformat(request_data.start_date.replace("Z", "+00:00"))
+        end_dt = datetime.fromisoformat(request_data.end_date.replace("Z", "+00:00"))
+        if end_dt <= start_dt:
+            raise HTTPException(status_code=400, detail="endDate must be after startDate")
+
+    requests = item.get("requests", [])
+    new_request = {
+        "requestId": str(uuid.uuid4()),
+        "buyerId": current_user["id"],
+        "buyerName": current_user.get("name"),
+        "type": request_data.type,
+        "paymentMethod": request_data.payment_method,
+        "status": "pending",
+        "startDate": request_data.start_date,
+        "endDate": request_data.end_date,
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+    }
+    requests.append(new_request)
+
+    await db.items.update_one({"id": product_id}, {"$set": {"requests": requests}})
+
+    return {
+        "message": "Request submitted",
+        "productId": product_id,
+        "request": new_request,
+    }
+
+@api_router.patch("/request/{product_id}/{request_id}")
+async def update_product_request(
+    product_id: str,
+    request_id: str,
+    decision_data: ProductRequestDecision,
+    current_user: dict = Depends(get_current_user)
+):
+    item = await db.items.find_one({"id": product_id}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    if item.get("owner_id") != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Only seller can approve/reject requests")
+
+    requests = item.get("requests", [])
+    found = False
+    for request in requests:
+        if request.get("requestId") == request_id:
+            request["status"] = decision_data.status
+            found = True
+            break
+
+    if not found:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    update_payload = {"requests": requests}
+    approved_request = next((r for r in requests if r.get("requestId") == request_id and r.get("status") == "approved"), None)
+    if approved_request:
+        update_payload["is_available"] = False
+        rent_details = item.get("rentDetails")
+        if rent_details:
+            rent_details["isAvailable"] = False
+            update_payload["rentDetails"] = rent_details
+
+    await db.items.update_one({"id": product_id}, {"$set": update_payload})
+
+    return {
+        "message": f"Request {decision_data.status}",
+        "productId": product_id,
+        "requestId": request_id,
+        "status": decision_data.status,
+    }
+
+@api_router.get("/seller/requests", response_model=List[SellerRequestResponse])
+async def get_seller_requests(current_user: dict = Depends(get_current_user)):
+    products = await db.items.find({"owner_id": current_user["id"]}, {"_id": 0}).to_list(500)
+    seller_requests = []
+
+    for product in products:
+        for request in product.get("requests", []):
+            seller_requests.append(
+                SellerRequestResponse(
+                    requestId=request.get("requestId"),
+                    productId=product.get("id"),
+                    productTitle=product.get("title"),
+                    buyerId=request.get("buyerId"),
+                    buyerName=request.get("buyerName"),
+                    type=request.get("type"),
+                    paymentMethod=request.get("paymentMethod", "meet"),
+                    status=request.get("status", "pending"),
+                    startDate=request.get("startDate"),
+                    endDate=request.get("endDate"),
+                    createdAt=request.get("createdAt", datetime.now(timezone.utc).isoformat()),
+                )
+            )
+
+    seller_requests.sort(key=lambda req: req.created_at, reverse=True)
+    return seller_requests
+
 # ===================== BOOKING ROUTES =====================
 
 @booking_router.post("", response_model=BookingResponse)
@@ -469,6 +788,8 @@ async def create_booking(booking_data: BookingCreate, current_user: dict = Depen
     item = await db.items.find_one({"id": booking_data.item_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
+    if item.get("type", "rent") != "rent":
+        raise HTTPException(status_code=400, detail="Only rent listings can be booked")
     if not item["is_available"]:
         raise HTTPException(status_code=400, detail="Item not available")
     if item["owner_id"] == current_user["id"]:
@@ -733,6 +1054,7 @@ async def health_check():
 # Include routers
 api_router.include_router(auth_router)
 api_router.include_router(items_router)
+api_router.include_router(products_router)
 api_router.include_router(booking_router)
 api_router.include_router(messages_router)
 api_router.include_router(reviews_router)

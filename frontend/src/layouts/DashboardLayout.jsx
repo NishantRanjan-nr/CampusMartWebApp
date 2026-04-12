@@ -35,6 +35,7 @@ const navItems = [
     { path: '/dashboard', icon: House, label: 'Dashboard', exact: true },
     { path: '/dashboard/listings', icon: Package, label: 'My Listings' },
     { path: '/dashboard/rentals', icon: ShoppingCart, label: 'My Rentals' },
+    { path: '/dashboard/requests', icon: Bell, label: 'Requests' },
     { path: '/dashboard/add-item', icon: Plus, label: 'Add Item' },
     { path: '/dashboard/messages', icon: ChatCircle, label: 'Messages' },
     { path: '/dashboard/profile', icon: User, label: 'Profile' },

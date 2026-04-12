@@ -21,6 +21,7 @@ import AddItem from "./pages/dashboard/AddItem";
 import EditItem from "./pages/dashboard/EditItem";
 import Messages from "./pages/dashboard/Messages";
 import Profile from "./pages/dashboard/Profile";
+import SellerRequestsPage from "./pages/dashboard/SellerRequestsPage";
 
 import "@/App.css";
 
@@ -68,6 +69,7 @@ function AppRoutes() {
                 <Route path="edit-item/:id" element={<EditItem />} />
                 <Route path="messages" element={<Messages />} />
                 <Route path="messages/:userId" element={<Messages />} />
+                <Route path="requests" element={<SellerRequestsPage />} />
                 <Route path="profile" element={<Profile />} />
             </Route>
         </Routes>
