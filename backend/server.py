@@ -111,6 +111,9 @@ class UserResponse(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
 class SignupResponse(BaseModel):
     message: str
     email: EmailStr
@@ -121,9 +124,6 @@ class VerifyOtpRequest(BaseModel):
 
 class ResendOtpRequest(BaseModel):
     email: EmailStr
-
-    token_type: str = "bearer"
-    user: UserResponse
 
 # Item Models
 class RentDetails(BaseModel):
