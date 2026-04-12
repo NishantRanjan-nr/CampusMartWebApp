@@ -33,12 +33,12 @@ JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
 # SMTP Configuration for Email Sending
-SMTP_HOST = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
+SMTP_HOST = os.environ.get('SMTP_HOST', 'smtp.gmail.com').strip()
 SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
-SMTP_USER = os.environ.get('SMTP_USER', '')
-SMTP_PASS = os.environ.get('SMTP_PASS', '')
-SMTP_FROM = os.environ.get('SMTP_FROM', SMTP_USER or 'noreply@campusmart.local')
-SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').lower() == 'true'
+SMTP_USER = os.environ.get('SMTP_USER', '').strip()
+SMTP_PASS = os.environ.get('SMTP_PASS', '').replace(' ', '').strip()
+SMTP_FROM = os.environ.get('SMTP_FROM', SMTP_USER or 'noreply@campusmart.local').strip()
+SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').strip().lower() == 'true'
 SMTP_ENABLED = bool(SMTP_USER and SMTP_PASS)
 
 # Create the main app with redirect_slashes enabled (default behavior)
@@ -345,7 +345,7 @@ async def send_email(to_email: str, subject: str, body: str) -> bool:
         return True
 
     except smtplib.SMTPAuthenticationError:
-        logging.error("SMTP authentication failed. Check SMTP_USER and SMTP_PASS.")
+        logging.error("SMTP authentication failed for %s. Check SMTP_USER and Gmail app password.", SMTP_USER)
         return False
     except smtplib.SMTPException as e:
         logging.error("SMTP error sending email to %s: %s", to_email, str(e))
