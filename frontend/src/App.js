@@ -12,6 +12,7 @@ import LandingPage from "./pages/LandingPage";
 import BrowsePage from "./pages/BrowsePage";
 import ItemDetailPage from "./pages/ItemDetailPage";
 import AuthPage from "./pages/AuthPage";
+import VerifyOtpPage from "./pages/VerifyOtpPage";
 
 // Dashboard Pages
 import DashboardHome from "./pages/dashboard/DashboardHome";
@@ -53,8 +54,9 @@ function AppRoutes() {
                 <Route path="/item/:id" element={<ItemDetailPage />} />
             </Route>
             
-            {/* Auth Route */}
+            {/* Auth Routes */}
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/verify-otp" element={<VerifyOtpPage />} />
             
             {/* Dashboard Routes */}
             <Route path="/dashboard" element={

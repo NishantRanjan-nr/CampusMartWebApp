@@ -11,6 +11,9 @@ from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Literal
 import uuid
 from datetime import datetime, timezone, timedelta
+import random
+import smtplib
+from email.message import EmailMessage
 import bcrypt
 import jwt
 from pymongo.errors import PyMongoError
@@ -28,6 +31,15 @@ db = client[os.environ['DB_NAME']]
 JWT_SECRET = os.environ.get('JWT_SECRET', 'campusmart-secret-key-2024')
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
+
+# SMTP Configuration for Email Sending
+SMTP_HOST = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
+SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
+SMTP_USER = os.environ.get('SMTP_USER', '')
+SMTP_PASS = os.environ.get('SMTP_PASS', '')
+SMTP_FROM = os.environ.get('SMTP_FROM', SMTP_USER or 'noreply@campusmart.local')
+SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').lower() == 'true'
+SMTP_ENABLED = bool(SMTP_USER and SMTP_PASS)
 
 # Create the main app with redirect_slashes enabled (default behavior)
 app = FastAPI(title="CampusMart API")
@@ -99,6 +111,17 @@ class UserResponse(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+class SignupResponse(BaseModel):
+    message: str
+    email: EmailStr
+
+class VerifyOtpRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
+class ResendOtpRequest(BaseModel):
+    email: EmailStr
+
     token_type: str = "bearer"
     user: UserResponse
 
@@ -290,6 +313,55 @@ class ReviewResponse(BaseModel):
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+def _generate_otp() -> str:
+    return f"{random.randint(100000, 999999)}"
+
+def _otp_expiry() -> str:
+    return (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
+
+async def send_email(to_email: str, subject: str, body: str) -> bool:
+    """
+    Send email via SMTP.
+    Returns True if sent successfully, False otherwise.
+    """
+    if not SMTP_ENABLED:
+        logging.info("[DEV MODE] Email to %s (SMTP not configured)\n%s", to_email, body)
+        return False
+
+    try:
+        message = EmailMessage()
+        message["Subject"] = subject
+        message["From"] = SMTP_FROM
+        message["To"] = to_email
+        message.set_content(body)
+
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as smtp:
+            if SMTP_USE_TLS:
+                smtp.starttls()
+            smtp.login(SMTP_USER, SMTP_PASS)
+            smtp.send_message(message)
+
+        logging.info("Email sent successfully to %s", to_email)
+        return True
+
+    except smtplib.SMTPAuthenticationError:
+        logging.error("SMTP authentication failed. Check SMTP_USER and SMTP_PASS.")
+        return False
+    except smtplib.SMTPException as e:
+        logging.error("SMTP error sending email to %s: %s", to_email, str(e))
+        return False
+    except Exception as e:
+        logging.error("Failed to send email to %s: %s", to_email, str(e))
+        return False
+
+async def _send_otp_email(recipient: str, otp: str):
+    """
+    Send OTP verification email to recipient.
+    """
+    subject = "CampusMart - Email Verification"
+    body = f"Your verification code is: {otp}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email."
+    await send_email(recipient, subject, body)
+
 
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
@@ -378,15 +450,14 @@ def _apply_item_update_payload(existing_item: dict, update_data: dict) -> dict:
 
 # ===================== AUTH ROUTES =====================
 
-@auth_router.post("/signup", response_model=TokenResponse)
+@auth_router.post("/signup", response_model=SignupResponse)
 async def signup(user_data: UserCreate):
     try:
-        print('signup called with:', user_data.dict())
-        # Check if user exists
         existing = await db.users.find_one({"email": user_data.email})
         if existing:
             raise HTTPException(status_code=400, detail="Email already registered")
-        
+
+        otp = _generate_otp()
         user_id = str(uuid.uuid4())
         user = {
             "id": user_id,
@@ -395,28 +466,86 @@ async def signup(user_data: UserCreate):
             "name": user_data.name,
             "location": user_data.location or "Campus",
             "avatar": None,
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "is_verified": False,
+            "otp_hash": hash_password(otp),
+            "otp_expiry": _otp_expiry(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }
-        
+
         await db.users.insert_one(user)
-        token = create_token(user_id)
-        
-        user_response = UserResponse(
-            id=user["id"],
-            email=user["email"],
-            name=user["name"],
-            location=user["location"],
-            created_at=user["created_at"],
-            avatar=user["avatar"]
-        )
-        
-        return TokenResponse(access_token=token, user=user_response)
+        await _send_otp_email(user_data.email, otp)
+
+        return SignupResponse(message="OTP sent to your email", email=user_data.email)
     except PyMongoError:
         raise HTTPException(status_code=503, detail="Database unavailable. Please try again in a few minutes.")
     except Exception as e:
-        print('signup error:', e)
+        print("signup error:", e)
         traceback.print_exc()
         raise
+
+@auth_router.post("/verify-otp", response_model=TokenResponse)
+async def verify_otp(payload: VerifyOtpRequest):
+    try:
+        user = await db.users.find_one({"email": payload.email}, {"_id": 0})
+    except PyMongoError:
+        raise HTTPException(status_code=503, detail="Database unavailable. Please try again in a few minutes.")
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    if user.get("is_verified", False):
+        raise HTTPException(status_code=400, detail="Account already verified")
+
+    expiry_raw = user.get("otp_expiry")
+    if not expiry_raw:
+        raise HTTPException(status_code=400, detail="OTP expired. Please request a new code")
+
+    expiry = datetime.fromisoformat(expiry_raw.replace("Z", "+00:00"))
+    if datetime.now(timezone.utc) > expiry:
+        raise HTTPException(status_code=400, detail="OTP expired. Please request a new code")
+
+    otp_hash = user.get("otp_hash")
+    if not otp_hash or not verify_password(payload.otp.strip(), otp_hash):
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"is_verified": True}, "$unset": {"otp_hash": "", "otp_expiry": ""}},
+    )
+
+    token = create_token(user["id"])
+    user_response = UserResponse(
+        id=user["id"],
+        email=user["email"],
+        name=user["name"],
+        location=user["location"],
+        created_at=user["created_at"],
+        avatar=user.get("avatar"),
+    )
+
+    return TokenResponse(access_token=token, user=user_response)
+
+@auth_router.post("/resend-otp", response_model=SignupResponse)
+async def resend_otp(payload: ResendOtpRequest):
+    try:
+        user = await db.users.find_one({"email": payload.email}, {"_id": 0})
+    except PyMongoError:
+        raise HTTPException(status_code=503, detail="Database unavailable. Please try again in a few minutes.")
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    if user.get("is_verified", False):
+        raise HTTPException(status_code=400, detail="Account already verified")
+
+    otp = _generate_otp()
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"otp_hash": hash_password(otp), "otp_expiry": _otp_expiry()}},
+    )
+    await _send_otp_email(payload.email, otp)
+
+    return SignupResponse(message="OTP resent to your email", email=payload.email)
 
 @auth_router.post("/login", response_model=TokenResponse)
 async def login(credentials: UserLogin):
@@ -426,9 +555,12 @@ async def login(credentials: UserLogin):
         raise HTTPException(status_code=503, detail="Database unavailable. Please try again in a few minutes.")
     if not user or not verify_password(credentials.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    
+
+    if user.get("is_verified") is False:
+        raise HTTPException(status_code=403, detail="Please verify your email before logging in")
+
     token = create_token(user["id"])
-    
+
     user_response = UserResponse(
         id=user["id"],
         email=user["email"],
@@ -437,7 +569,7 @@ async def login(credentials: UserLogin):
         created_at=user["created_at"],
         avatar=user.get("avatar")
     )
-    
+
     return TokenResponse(access_token=token, user=user_response)
 
 @auth_router.get("/me", response_model=UserResponse)
@@ -452,12 +584,12 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     )
 
 # Backward-compatible endpoint for requested /register path
-@app.post("/register", response_model=TokenResponse)
+@app.post("/register", response_model=SignupResponse)
 async def register_main(user_data: UserCreate):
     try:
         return await signup(user_data)
     except Exception as e:
-        print('register_main error:', e)
+        print("register_main error:", e)
         import traceback
         traceback.print_exc()
         raise
@@ -1050,6 +1182,37 @@ async def get_recent_activity(current_user: dict = Depends(get_current_user)):
 @api_router.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "CampusMart API"}
+
+# Email testing endpoint (development only)
+@auth_router.post("/test-email")
+async def test_email(email: str = None):
+    """
+    Test endpoint to verify SMTP configuration.
+    Usage: POST /api/auth/test-email?email=your@email.com
+    """
+    if not email:
+        raise HTTPException(status_code=400, detail="Email parameter required")
+
+    subject = "CampusMart - Test Email"
+    body = f"This is a test email from CampusMart SMTP configuration.\n\nIf you received this, SMTP is working correctly."
+
+    success = await send_email(email, subject, body)
+
+    if success:
+        return {"status": "success", "message": "Test email sent successfully", "email": email}
+    else:
+        if SMTP_ENABLED:
+            return {
+                "status": "error",
+                "message": "Failed to send email. Check server logs for details.",
+                "email": email
+            }
+        else:
+            return {
+                "status": "dev-mode",
+                "message": "SMTP not configured. Running in development mode (emails logged only).",
+                "email": email
+            }
 
 # Include routers
 api_router.include_router(auth_router)

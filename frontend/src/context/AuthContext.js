@@ -49,18 +49,28 @@ export const AuthProvider = ({ children }) => {
     };
 
     const signup = async (name, email, password, location) => {
-        const response = await axios.post(`${API}/auth/signup`, { 
-            name, 
-            email, 
+        const response = await axios.post(`${API}/auth/signup`, {
+            name,
+            email,
             password,
             location: location || 'Campus'
         });
+        return response.data;
+    };
+
+    const verifyOtp = async (email, otp) => {
+        const response = await axios.post(`${API}/auth/verify-otp`, { email, otp });
         const { access_token, user: userData } = response.data;
         localStorage.setItem('token', access_token);
         axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
         setToken(access_token);
         setUser(userData);
         return userData;
+    };
+
+    const resendOtp = async (email) => {
+        const response = await axios.post(`${API}/auth/resend-otp`, { email });
+        return response.data;
     };
 
     const logout = () => {
@@ -84,6 +94,8 @@ export const AuthProvider = ({ children }) => {
             isAuthenticated: !!user,
             login,
             signup,
+            verifyOtp,
+            resendOtp,
             logout,
             updateProfile
         }}>

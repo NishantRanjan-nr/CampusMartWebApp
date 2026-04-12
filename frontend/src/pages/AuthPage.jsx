@@ -78,8 +78,8 @@ export default function AuthPage() {
         setLoading(true);
         try {
             await signup(signupName, signupEmail, signupPassword, signupLocation);
-            toast.success('Account created successfully!');
-            navigate('/dashboard');
+            toast.success('OTP sent to your email. Verify to continue.');
+            navigate(`/verify-otp?email=${encodeURIComponent(signupEmail)}`);
         } catch (error) {
             toast.error(getAuthErrorMessage(error, 'Failed to create account'));
         } finally {
