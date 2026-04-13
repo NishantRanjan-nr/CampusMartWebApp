@@ -117,11 +117,20 @@ export default function MyListings() {
                         >
                             <Card className="overflow-hidden" data-testid={`listing-card-${item.id}`}>
                                 <div className="aspect-video relative overflow-hidden bg-muted">
-                                    <img
-                                        src={item.images?.[0]}
-                                        alt={item.title}
-                                        className="w-full h-full object-cover"
-                                    />
+                                    {item.images?.[0] ? (
+                                        <img
+                                            src={item.images[0]}
+                                            alt={item.title}
+                                            className="w-full h-full object-cover"
+                                            onError={(event) => {
+                                                event.currentTarget.style.display = 'none';
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 text-xs font-medium uppercase tracking-[0.2em] text-slate-400">
+                                            No image
+                                        </div>
+                                    )}
                                     <Badge
                                         variant="secondary"
                                         className={`absolute top-3 right-3 ${item.type === 'rent'

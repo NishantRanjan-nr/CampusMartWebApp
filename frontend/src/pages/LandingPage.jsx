@@ -340,11 +340,20 @@ export default function LandingPage() {
                                         <Link to={`/item/${item.id}`} data-testid={`featured-item-${item.id}`}>
                                             <Card className="group h-full overflow-hidden border-white/10 bg-white/5 text-white transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:shadow-[0_24px_80px_rgba(15,23,42,0.35)]">
                                                 <div className="aspect-[4/5] overflow-hidden bg-white/10">
-                                                    <img
-                                                        src={item.images?.[0]}
-                                                        alt={item.title}
-                                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                                    />
+                                                    {item.images?.[0] ? (
+                                                        <img
+                                                            src={item.images[0]}
+                                                            alt={item.title}
+                                                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                            onError={(event) => {
+                                                                event.currentTarget.style.display = 'none';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 text-xs font-medium uppercase tracking-[0.2em] text-white/45">
+                                                            No image
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <CardContent className="space-y-4 p-5">
                                                     <div className="flex items-start justify-between gap-4">

@@ -36,7 +36,20 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
         <Card className="group overflow-hidden card-hover" data-testid={`product-card-${product.id}`}>
             <div className="aspect-square overflow-hidden bg-muted relative">
                 <Link to={`/item/${product.id}`}>
-                    <img src={imageSrc} alt="listing" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    {imageSrc ? (
+                        <img
+                            src={imageSrc}
+                            alt="listing"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            onError={(event) => {
+                                event.currentTarget.style.display = 'none';
+                            }}
+                        />
+                    ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 text-xs font-medium uppercase tracking-[0.2em] text-slate-400">
+                            No image
+                        </div>
+                    )}
                 </Link>
 
                 <Badge
