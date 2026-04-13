@@ -6,16 +6,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import traceback
+import requests
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Literal
 import uuid
 from datetime import datetime, timezone, timedelta
 import random
-import smtplib
-import socket
-import ssl
-from email.message import EmailMessage
 import bcrypt
 import jwt
 from pymongo.errors import PyMongoError
@@ -34,20 +31,11 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'campusmart-secret-key-2024')
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
-# SMTP Configuration for Email Sending
-SMTP_HOST = os.environ.get('SMTP_HOST', 'smtp.gmail.com').strip()
-SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
-SMTP_USER = os.environ.get('SMTP_USER', '').strip()
-SMTP_PASS = os.environ.get('SMTP_PASS', '').replace(' ', '').strip()
-SMTP_FROM = os.environ.get('SMTP_FROM', SMTP_USER or 'noreply@campusmart.local').strip()
-SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').strip().lower() == 'true'
-SMTP_USE_SSL = os.environ.get('SMTP_USE_SSL', 'false').strip().lower() == 'true'
-SMTP_TIMEOUT = int(os.environ.get('SMTP_TIMEOUT', '30'))
-SMTP_ENABLED = bool(SMTP_USER and SMTP_PASS)
-
-# Resolve transport mode defensively so common env mismatches do not break delivery.
-SMTP_EFFECTIVE_SSL = SMTP_USE_SSL or SMTP_PORT == 465
-SMTP_EFFECTIVE_TLS = SMTP_USE_TLS and not SMTP_EFFECTIVE_SSL
+# Resend Configuration for Email Sending
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '').strip()
+RESEND_FROM = 'no-reply@campusmartnr.me'
+RESEND_API_URL = 'https://api.resend.com/emails'
+RESEND_ENABLED = bool(RESEND_API_KEY)
 
 # Create the main app with redirect_slashes enabled (default behavior)
 app = FastAPI(title="CampusMart API")
@@ -327,57 +315,41 @@ def _generate_otp() -> str:
 def _otp_expiry() -> str:
     return (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
 
-async def send_email(to_email: str, subject: str, body: str) -> bool:
+def send_email(to_email: str, subject: str, html_content: str) -> bool:
     """
-    Send email via SMTP.
+    Send email via Resend HTTP API.
     Returns True if sent successfully, False otherwise.
     """
-    if not SMTP_ENABLED:
-        logging.info("[DEV MODE] Email to %s (SMTP not configured)\n%s", to_email, body)
+    if not RESEND_ENABLED:
+        logging.error("Resend API key is not configured")
         return False
 
     try:
-        message = EmailMessage()
-        message["Subject"] = subject
-        message["From"] = SMTP_FROM
-        message["To"] = to_email
-        message.set_content(body)
+        payload = {
+            "from": RESEND_FROM,
+            "to": [to_email],
+            "subject": subject,
+            "html": html_content,
+        }
+        headers = {
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json",
+        }
 
-        # Use effective mode so port-based SSL works even if env flags are mismatched.
-        if SMTP_EFFECTIVE_SSL:
-            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT, context=ssl.create_default_context()) as smtp:
-                smtp.login(SMTP_USER, SMTP_PASS)
-                smtp.send_message(message)
-        else:
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as smtp:
-                smtp.ehlo()
-                if SMTP_EFFECTIVE_TLS:
-                    smtp.starttls(context=ssl.create_default_context())
-                    smtp.ehlo()
-                smtp.login(SMTP_USER, SMTP_PASS)
-                smtp.send_message(message)
+        response = requests.post(RESEND_API_URL, json=payload, headers=headers, timeout=30)
+        print(f"Resend API response [{response.status_code}]: {response.text}")
 
-        logging.info("Email sent successfully to %s", to_email)
-        return True
+        if response.ok:
+            logging.info("Email sent successfully to %s", to_email)
+            return True
 
-    except smtplib.SMTPAuthenticationError:
-        logging.error("SMTP authentication failed for %s. Check SMTP_USER and Gmail app password.", SMTP_USER)
+        logging.error("Resend API error sending email to %s: %s", to_email, response.text)
         return False
-    except socket.timeout:
-        logging.error(
-            "SMTP connection timed out (host=%s port=%s tls=%s ssl=%s timeout=%ss)",
-            SMTP_HOST,
-            SMTP_PORT,
-            SMTP_EFFECTIVE_TLS,
-            SMTP_EFFECTIVE_SSL,
-            SMTP_TIMEOUT,
-        )
-        return False
-    except smtplib.SMTPException as e:
-        logging.error("SMTP error sending email to %s: %s", to_email, str(e))
+    except requests.RequestException as e:
+        logging.error("Failed to send email to %s via Resend: %s", to_email, str(e))
         return False
     except Exception as e:
-        logging.error("Failed to send email to %s: %s", to_email, str(e))
+        logging.error("Unexpected error sending email to %s via Resend: %s", to_email, str(e))
         return False
 
 async def _send_otp_email(recipient: str, otp: str):
@@ -385,8 +357,16 @@ async def _send_otp_email(recipient: str, otp: str):
     Send OTP verification email to recipient.
     """
     subject = "CampusMart - Email Verification"
-    body = f"Your verification code is: {otp}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email."
-    await send_email(recipient, subject, body)
+    html_body = f"""
+    <div style=\"font-family:Arial,sans-serif;line-height:1.6;color:#111\">
+      <h2>CampusMart Email Verification</h2>
+      <p>Your verification code is:</p>
+      <div style=\"font-size:28px;font-weight:700;letter-spacing:4px;margin:16px 0\">{otp}</div>
+      <p>This code will expire in 10 minutes.</p>
+      <p>If you didn't request this code, please ignore this email.</p>
+    </div>
+    """.strip()
+    send_email(recipient, subject, html_body)
 
 
 def verify_password(password: str, hashed: str) -> bool:
@@ -1222,12 +1202,13 @@ async def test_email(email: str = None):
     subject = "CampusMart - Test Email"
     body = f"This is a test email from CampusMart SMTP configuration.\n\nIf you received this, SMTP is working correctly."
 
-    success = await send_email(email, subject, body)
+    html_body = f"<p>{body.replace(chr(10), '<br>')}</p>"
+    success = send_email(email, subject, html_body)
 
     if success:
         return {"status": "success", "message": "Test email sent successfully", "email": email}
     else:
-        if SMTP_ENABLED:
+        if RESEND_ENABLED:
             return {
                 "status": "error",
                 "message": "Failed to send email. Check server logs for details.",
@@ -1236,7 +1217,7 @@ async def test_email(email: str = None):
         else:
             return {
                 "status": "dev-mode",
-                "message": "SMTP not configured. Running in development mode (emails logged only).",
+                "message": "Resend API key not configured.",
                 "email": email
             }
 
@@ -1256,16 +1237,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-logger.info(
-    "SMTP config loaded (enabled=%s host=%s port=%s tls=%s ssl=%s from=%s user=%s)",
-    SMTP_ENABLED,
-    SMTP_HOST,
-    SMTP_PORT,
-    SMTP_EFFECTIVE_TLS,
-    SMTP_EFFECTIVE_SSL,
-    SMTP_FROM,
-    SMTP_USER,
-)
+logger.info("Resend email config loaded (enabled=%s from=%s)", RESEND_ENABLED, RESEND_FROM)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
