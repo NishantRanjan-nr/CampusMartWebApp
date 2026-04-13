@@ -12,7 +12,7 @@ import {
 } from '../ui/select';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { Card, CardContent } from '../ui/card';
-import { Plus, UploadSimple, X } from '@phosphor-icons/react';
+import { UploadSimple, X } from '@phosphor-icons/react';
 import axios from 'axios';
 
 const baseFormState = {
@@ -31,6 +31,7 @@ const baseFormState = {
 
 export default function UploadForm({ initialValues, loading, submitLabel, onSubmit }) {
     const [formData, setFormData] = useState({ ...baseFormState, ...(initialValues || {}) });
+    const [pendingFiles, setPendingFiles] = useState([]);
     const [uploadingImages, setUploadingImages] = useState(false);
     const fileInputRef = useRef(null);
 
@@ -48,6 +49,7 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
                 ...initialValues,
                 images: normalizedImages,
             });
+            setPendingFiles([]);
         }
     }, [initialValues]);
 
@@ -87,31 +89,17 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
         return response.data.secure_url;
     };
 
-    const handleFilesSelected = async (event) => {
+    const handleFilesSelected = (event) => {
         const files = Array.from(event.target.files || []);
         if (!files.length) return;
 
-        const remainingSlots = Math.max(0, 5 - (formData.images?.length || 0));
-        const filesToUpload = files.slice(0, remainingSlots);
-        if (!filesToUpload.length) return;
+        setPendingFiles((prev) => {
+            const remainingSlots = Math.max(0, 5 - ((formData.images?.length || 0) + prev.length));
+            return [...prev, ...files.slice(0, remainingSlots)];
+        });
 
-        setUploadingImages(true);
-        try {
-            const uploadedUrls = [];
-            for (const file of filesToUpload) {
-                const uploadedUrl = await uploadToCloudinary(file);
-                uploadedUrls.push(uploadedUrl);
-                console.log('UploadForm uploaded image URL:', uploadedUrl);
-            }
-
-            setImages((prev) => [...prev, ...uploadedUrls]);
-        } catch (error) {
-            console.error('Cloudinary upload failed:', error);
-        } finally {
-            setUploadingImages(false);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
     };
 
@@ -119,10 +107,37 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
         setImages((prev) => prev.filter((_, i) => i !== index));
     };
 
-    const handleSubmit = (e) => {
+    const uploadImages = async () => {
+        const uploadedUrls = [];
+
+        for (const file of pendingFiles) {
+            const uploadedUrl = await uploadToCloudinary(file);
+            uploadedUrls.push(uploadedUrl);
+            console.log('UploadForm uploaded image URL:', uploadedUrl);
+        }
+
+        return uploadedUrls;
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('UploadForm submitting images:', formData.images);
-        onSubmit({ ...formData, type: normalizedType });
+
+        if (uploadingImages) return;
+
+        setUploadingImages(true);
+        try {
+            const uploadedUrls = await uploadImages();
+            const combinedImages = [...(formData.images || []).map((image) => String(image)), ...uploadedUrls];
+            const nextFormData = { ...formData, images: combinedImages, type: normalizedType };
+            console.log('UploadForm images after upload:', uploadedUrls);
+            console.log('UploadForm images before API call:', combinedImages);
+            await onSubmit(nextFormData);
+        } catch (error) {
+            console.error('Cloudinary upload failed:', error);
+        } finally {
+            setUploadingImages(false);
+            setPendingFiles([]);
+        }
     };
 
     return (
@@ -287,7 +302,7 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
                         type="button"
                         variant="outline"
                         onClick={() => fileInputRef.current?.click()}
-                        disabled={formData.images.length >= 5 || uploadingImages}
+                        disabled={(formData.images.length + pendingFiles.length) >= 5 || uploadingImages}
                         data-testid="upload-images-button"
                     >
                         <UploadSimple className="mr-2 h-4 w-4" />
@@ -307,6 +322,26 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
                 <p className="text-xs text-muted-foreground">
                     Pick photos from your device or camera. They will be uploaded to Cloudinary and saved as URLs.
                 </p>
+
+                {pendingFiles.length > 0 && (
+                    <div className="grid sm:grid-cols-2 gap-3">
+                        {pendingFiles.map((file, index) => (
+                            <Card key={`${file.name}-${index}`}>
+                                <CardContent className="p-3 flex items-center justify-between gap-2">
+                                    <span className="text-xs truncate">{file.name}</span>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setPendingFiles((prev) => prev.filter((_, i) => i !== index))}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                )}
 
                 {formData.images.length > 0 && (
                     <div className="grid sm:grid-cols-2 gap-3">
