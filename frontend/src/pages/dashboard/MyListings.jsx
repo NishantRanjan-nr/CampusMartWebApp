@@ -118,7 +118,7 @@ export default function MyListings() {
                             <Card className="overflow-hidden" data-testid={`listing-card-${item.id}`}>
                                 <div className="aspect-video relative overflow-hidden bg-muted">
                                     <img
-                                        src={item.images?.[0] || 'https://images.unsplash.com/photo-1760462788374-fe0d2d4ba4d1?w=400'}
+                                        src={item.images?.[0]}
                                         alt={item.title}
                                         className="w-full h-full object-cover"
                                     />

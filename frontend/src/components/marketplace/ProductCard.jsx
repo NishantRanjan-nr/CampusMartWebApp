@@ -30,16 +30,13 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
     const primaryPrice = isRent
         ? product.rentDetails?.pricePerDay ?? product.price_per_day ?? 0
         : product.price ?? 0;
+    const imageSrc = product.images?.[0];
 
     return (
         <Card className="group overflow-hidden card-hover" data-testid={`product-card-${product.id}`}>
             <div className="aspect-square overflow-hidden bg-muted relative">
                 <Link to={`/item/${product.id}`}>
-                    <img
-                        src={product.images?.[0] || 'https://images.unsplash.com/photo-1760462788374-fe0d2d4ba4d1?w=400'}
-                        alt={product.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+                    <img src={imageSrc} alt="listing" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 </Link>
 
                 <Badge

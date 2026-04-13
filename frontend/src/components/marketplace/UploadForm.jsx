@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -12,7 +12,8 @@ import {
 } from '../ui/select';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { Card, CardContent } from '../ui/card';
-import { Plus, X } from '@phosphor-icons/react';
+import { Plus, UploadSimple, X } from '@phosphor-icons/react';
+import axios from 'axios';
 
 const baseFormState = {
     title: '',
@@ -30,11 +31,23 @@ const baseFormState = {
 
 export default function UploadForm({ initialValues, loading, submitLabel, onSubmit }) {
     const [formData, setFormData] = useState({ ...baseFormState, ...(initialValues || {}) });
-    const [imageUrl, setImageUrl] = useState('');
+    const [uploadingImages, setUploadingImages] = useState(false);
+    const fileInputRef = useRef(null);
+
+    const cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET;
 
     useEffect(() => {
         if (initialValues) {
-            setFormData({ ...baseFormState, ...initialValues });
+            const normalizedImages = Array.isArray(initialValues.images)
+                ? initialValues.images.map((image) => String(image))
+                : [];
+            console.log('UploadForm received images:', normalizedImages);
+            setFormData({
+                ...baseFormState,
+                ...initialValues,
+                images: normalizedImages,
+            });
         }
     }, [initialValues]);
 
@@ -44,19 +57,71 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const addImage = () => {
-        if (!imageUrl.trim()) return;
-        if (formData.images.length >= 5) return;
-        updateForm('images', [...formData.images, imageUrl.trim()]);
-        setImageUrl('');
+    const setImages = (updater) => {
+        setFormData((prev) => {
+            const nextImages = typeof updater === 'function' ? updater(prev.images || []) : updater;
+            return {
+                ...prev,
+                images: nextImages.map((image) => String(image)),
+            };
+        });
+    };
+
+    const uploadToCloudinary = async (file) => {
+        if (!cloudName || !uploadPreset) {
+            throw new Error('Cloudinary environment variables are missing');
+        }
+
+        const cloudinaryForm = new FormData();
+        cloudinaryForm.append('file', file);
+        cloudinaryForm.append('upload_preset', uploadPreset);
+
+        const response = await axios.post(
+            `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+            cloudinaryForm,
+            {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            }
+        );
+
+        return response.data.secure_url;
+    };
+
+    const handleFilesSelected = async (event) => {
+        const files = Array.from(event.target.files || []);
+        if (!files.length) return;
+
+        const remainingSlots = Math.max(0, 5 - (formData.images?.length || 0));
+        const filesToUpload = files.slice(0, remainingSlots);
+        if (!filesToUpload.length) return;
+
+        setUploadingImages(true);
+        try {
+            const uploadedUrls = [];
+            for (const file of filesToUpload) {
+                const uploadedUrl = await uploadToCloudinary(file);
+                uploadedUrls.push(uploadedUrl);
+                console.log('UploadForm uploaded image URL:', uploadedUrl);
+            }
+
+            setImages((prev) => [...prev, ...uploadedUrls]);
+        } catch (error) {
+            console.error('Cloudinary upload failed:', error);
+        } finally {
+            setUploadingImages(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
     };
 
     const removeImage = (index) => {
-        updateForm('images', formData.images.filter((_, i) => i !== index));
+        setImages((prev) => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        console.log('UploadForm submitting images:', formData.images);
         onSubmit({ ...formData, type: normalizedType });
     };
 
@@ -216,18 +281,32 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
             </div>
 
             <div className="space-y-3">
-                <Label>Image URLs (up to 5)</Label>
-                <div className="flex gap-2">
-                    <Input
-                        value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
-                        placeholder="https://example.com/image.jpg"
-                        data-testid="image-url-input"
-                    />
-                    <Button type="button" variant="outline" onClick={addImage} disabled={formData.images.length >= 5}>
-                        <Plus className="h-4 w-4" />
+                <div className="flex items-center justify-between gap-3">
+                    <Label>Listing Photos (up to 5)</Label>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={formData.images.length >= 5 || uploadingImages}
+                        data-testid="upload-images-button"
+                    >
+                        <UploadSimple className="mr-2 h-4 w-4" />
+                        {uploadingImages ? 'Uploading...' : 'Upload Images'}
                     </Button>
                 </div>
+                <Input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    capture="environment"
+                    onChange={handleFilesSelected}
+                    className="hidden"
+                    data-testid="image-file-input"
+                />
+                <p className="text-xs text-muted-foreground">
+                    Pick photos from your device or camera. They will be uploaded to Cloudinary and saved as URLs.
+                </p>
 
                 {formData.images.length > 0 && (
                     <div className="grid sm:grid-cols-2 gap-3">

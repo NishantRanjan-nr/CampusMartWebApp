@@ -10,12 +10,6 @@ import UploadForm from '../../components/marketplace/UploadForm';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const defaultImages = {
-    electronics: 'https://images.unsplash.com/photo-1760462788374-fe0d2d4ba4d1?w=800',
-    clothes: 'https://images.unsplash.com/photo-1574089511111-14c8dbb77b2a?w=800',
-    books: 'https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg',
-};
-
 export default function AddItem() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -36,9 +30,11 @@ export default function AddItem() {
             return;
         }
 
-        const listingImages = values.images?.length
-            ? values.images
-            : [defaultImages[values.category] || defaultImages.electronics];
+        const listingImages = Array.isArray(values.images)
+            ? values.images.map((image) => String(image))
+            : [];
+
+        console.log('AddItem images before sending to backend:', listingImages);
 
         const payload = {
             title: values.title,

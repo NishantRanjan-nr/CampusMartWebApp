@@ -108,7 +108,7 @@ export default function MyRentals() {
                         {/* Item Image */}
                         <div className="w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                             <img
-                                src={booking.item_image || 'https://images.unsplash.com/photo-1760462788374-fe0d2d4ba4d1?w=200'}
+                                src={booking.item_image}
                                 alt={booking.item_title}
                                 className="w-full h-full object-cover"
                             />

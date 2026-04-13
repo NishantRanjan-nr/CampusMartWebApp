@@ -26,6 +26,8 @@ export default function EditItem() {
             try {
                 const response = await axios.get(`${API}/items/${id}`);
                 const item = response.data;
+                const receivedImages = Array.isArray(item.images) ? item.images.map((image) => String(image)) : [];
+                console.log('EditItem received images from backend:', receivedImages);
                 setIsAvailable(item.rentDetails?.isAvailable ?? item.is_available ?? true);
                 setItemData({
                     title: item.title || '',
@@ -40,7 +42,7 @@ export default function EditItem() {
                     location: item.location || '',
                     condition: item.condition || 'Good',
                     size: item.size || '',
-                    images: item.images || [],
+                    images: receivedImages,
                 });
             } catch (error) {
                 toast.error('Failed to load item');
@@ -54,6 +56,12 @@ export default function EditItem() {
     }, [id, navigate]);
 
     const handleUpdateItem = async (values) => {
+        const listingImages = Array.isArray(values.images)
+            ? values.images.map((image) => String(image))
+            : [];
+
+        console.log('EditItem images before sending to backend:', listingImages);
+
         const payload = {
             title: values.title,
             description: values.description,
@@ -70,7 +78,7 @@ export default function EditItem() {
             location: values.location,
             condition: values.condition,
             size: values.size || null,
-            images: values.images || [],
+            images: listingImages,
             is_available: isAvailable,
         };
 

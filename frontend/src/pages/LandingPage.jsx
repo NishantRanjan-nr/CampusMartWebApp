@@ -341,7 +341,7 @@ export default function LandingPage() {
                                             <Card className="group h-full overflow-hidden border-white/10 bg-white/5 text-white transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:shadow-[0_24px_80px_rgba(15,23,42,0.35)]">
                                                 <div className="aspect-[4/5] overflow-hidden bg-white/10">
                                                     <img
-                                                        src={item.images?.[0] || 'https://images.unsplash.com/photo-1760462788374-fe0d2d4ba4d1?w=400'}
+                                                        src={item.images?.[0]}
                                                         alt={item.title}
                                                         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                                                     />

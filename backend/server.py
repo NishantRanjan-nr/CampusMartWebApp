@@ -651,6 +651,7 @@ async def update_profile(
 async def create_item(item_data: ItemCreate, current_user: dict = Depends(get_current_user)):
     item_id = str(uuid.uuid4())
     normalized = _normalize_item_payload(item_data)
+    listing_images = [str(image) for image in item_data.images] if item_data.images else []
     item = {
         "id": item_id,
         "owner_id": current_user["id"],
@@ -666,7 +667,7 @@ async def create_item(item_data: ItemCreate, current_user: dict = Depends(get_cu
         "price_per_day": normalized["price_per_day"],
         "deposit": item_data.deposit or 0.0,
         "location": item_data.location,
-        "images": item_data.images if item_data.images else ["https://images.unsplash.com/photo-1760462788374-fe0d2d4ba4d1?w=400"],
+        "images": listing_images,
         "condition": item_data.condition,
         "size": item_data.size,
         "is_available": normalized["is_available"],
@@ -739,6 +740,8 @@ async def update_item(item_id: str, item_data: ItemUpdate, current_user: dict = 
         raise HTTPException(status_code=403, detail="Not authorized")
     
     update_data = {k: v for k, v in item_data.model_dump(by_alias=True).items() if v is not None}
+    if "images" in update_data:
+        update_data["images"] = [str(image) for image in update_data["images"]]
     update_data = _apply_item_update_payload(item, update_data)
     if update_data:
         await db.items.update_one({"id": item_id}, {"$set": update_data})
