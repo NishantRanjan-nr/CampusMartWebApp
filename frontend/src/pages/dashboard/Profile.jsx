@@ -16,7 +16,7 @@ export default function Profile() {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: user?.name || '',
-        location: user?.location || ''
+        college: user?.college || ''
     });
 
     const handleChange = (e) => {
@@ -34,7 +34,7 @@ export default function Profile() {
         try {
             await updateProfile({
                 name: formData.name,
-                location: formData.location
+                college: formData.college
             });
             toast.success('Profile updated!');
             setEditing(false);
@@ -48,7 +48,7 @@ export default function Profile() {
     const handleCancel = () => {
         setFormData({
             name: user?.name || '',
-            location: user?.location || ''
+            college: user?.college || ''
         });
         setEditing(false);
     };
@@ -105,15 +105,15 @@ export default function Profile() {
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="location">Location</Label>
+                                    <Label htmlFor="college">College</Label>
                                     <Input
-                                        id="location"
-                                        name="location"
-                                        value={formData.location}
+                                        id="college"
+                                        name="college"
+                                        value={formData.college}
                                         onChange={handleChange}
-                                        placeholder="e.g., North Campus"
+                                        placeholder="Your college"
                                         className="mt-1.5"
-                                        data-testid="profile-location-input"
+                                        data-testid="profile-college-input"
                                     />
                                 </div>
                                 <div className="flex gap-2 pt-2">
@@ -144,8 +144,8 @@ export default function Profile() {
                                 <div className="flex items-center gap-3">
                                     <MapPin className="w-5 h-5 text-muted-foreground" />
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Location</p>
-                                        <p className="font-medium">{user?.location || 'Not set'}</p>
+                                        <p className="text-sm text-muted-foreground">College</p>
+                                        <p className="font-medium">{user?.college || 'Not set'}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">

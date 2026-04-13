@@ -90,7 +90,8 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     name: str
-    location: Optional[str] = "Campus"
+    college: str = Field(..., min_length=1)
+    course: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -101,7 +102,8 @@ class UserResponse(BaseModel):
     id: str
     email: str
     name: str
-    location: str
+    college: str
+    course: Optional[str] = None
     created_at: str
     avatar: Optional[str] = None
 
@@ -315,6 +317,9 @@ def _generate_otp() -> str:
 def _otp_expiry() -> str:
     return (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
 
+def _get_user_college(user: dict) -> str:
+    return user.get("college") or user.get("location") or "Not set"
+
 def send_email(to_email: str, subject: str, html_content: str) -> bool:
     """
     Send email via Resend HTTP API.
@@ -463,6 +468,10 @@ async def signup(user_data: UserCreate):
         if existing:
             raise HTTPException(status_code=400, detail="Email already registered")
 
+        college = user_data.college.strip()
+        if not college:
+            raise HTTPException(status_code=422, detail="College is required")
+
         otp = _generate_otp()
         user_id = str(uuid.uuid4())
         user = {
@@ -470,7 +479,8 @@ async def signup(user_data: UserCreate):
             "email": user_data.email,
             "password": hash_password(user_data.password),
             "name": user_data.name,
-            "location": user_data.location or "Campus",
+            "college": college,
+            "course": user_data.course.strip() if user_data.course and user_data.course.strip() else None,
             "avatar": None,
             "is_verified": False,
             "otp_hash": hash_password(otp),
@@ -524,7 +534,8 @@ async def verify_otp(payload: VerifyOtpRequest):
         id=user["id"],
         email=user["email"],
         name=user["name"],
-        location=user["location"],
+        college=_get_user_college(user),
+        course=user.get("course"),
         created_at=user["created_at"],
         avatar=user.get("avatar"),
     )
@@ -571,7 +582,8 @@ async def login(credentials: UserLogin):
         id=user["id"],
         email=user["email"],
         name=user["name"],
-        location=user["location"],
+        college=_get_user_college(user),
+        course=user.get("course"),
         created_at=user["created_at"],
         avatar=user.get("avatar")
     )
@@ -584,7 +596,8 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         id=current_user["id"],
         email=current_user["email"],
         name=current_user["name"],
-        location=current_user["location"],
+        college=_get_user_college(current_user),
+        course=current_user.get("course"),
         created_at=current_user["created_at"],
         avatar=current_user.get("avatar")
     )
@@ -603,15 +616,18 @@ async def register_main(user_data: UserCreate):
 @auth_router.put("/profile")
 async def update_profile(
     name: Optional[str] = None,
-    location: Optional[str] = None,
+    college: Optional[str] = None,
+    course: Optional[str] = None,
     avatar: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     update_data = {}
     if name:
         update_data["name"] = name
-    if location:
-        update_data["location"] = location
+    if college:
+        update_data["college"] = college
+    if course is not None:
+        update_data["course"] = course.strip() or None
     if avatar:
         update_data["avatar"] = avatar
     
@@ -623,7 +639,8 @@ async def update_profile(
         id=updated_user["id"],
         email=updated_user["email"],
         name=updated_user["name"],
-        location=updated_user["location"],
+        college=_get_user_college(updated_user),
+        course=updated_user.get("course"),
         created_at=updated_user["created_at"],
         avatar=updated_user.get("avatar")
     )

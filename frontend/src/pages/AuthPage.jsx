@@ -6,9 +6,29 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Eye, EyeSlash } from '@phosphor-icons/react';
+
+const COLLEGE_OPTIONS = [
+    'Jharkhand Raksha Shakti University',
+    'Banaras Hindu University (BHU)',
+    'Delhi University (DU)',
+    'Jawaharlal Nehru University (JNU)',
+    'Jamia Millia Islamia',
+    'University of Hyderabad',
+    'Aligarh Muslim University (AMU)',
+    'Indian Institute of Technology Delhi (IIT Delhi)',
+    'Indian Institute of Technology Bombay (IIT Bombay)',
+    'Indian Institute of Technology Kanpur (IIT Kanpur)',
+    'Indian Institute of Technology Kharagpur (IIT Kharagpur)',
+    'National Institute of Technology Trichy (NIT Trichy)',
+    'National Institute of Technology Surathkal (NIT Surathkal)',
+    'National Institute of Technology Warangal (NIT Warangal)',
+    'National Institute of Technology Rourkela (NIT Rourkela)',
+    'Indian Institute of Science (IISc Bangalore)',
+];
 
 export default function AuthPage() {
     const navigate = useNavigate();
@@ -24,7 +44,9 @@ export default function AuthPage() {
     const [signupName, setSignupName] = useState('');
     const [signupEmail, setSignupEmail] = useState('');
     const [signupPassword, setSignupPassword] = useState('');
-    const [signupLocation, setSignupLocation] = useState('');
+    const [signupCollege, setSignupCollege] = useState('');
+    const [signupCourse, setSignupCourse] = useState('');
+    const [signupCollegeError, setSignupCollegeError] = useState('');
 
     // Redirect if already authenticated
     if (isAuthenticated) {
@@ -70,6 +92,12 @@ export default function AuthPage() {
             return;
         }
 
+        if (!signupCollege) {
+            setSignupCollegeError('Please select your college');
+            toast.error('Please select your college');
+            return;
+        }
+
         if (signupPassword.length < 6) {
             toast.error('Password must be at least 6 characters');
             return;
@@ -77,7 +105,7 @@ export default function AuthPage() {
 
         setLoading(true);
         try {
-            await signup(signupName, signupEmail, signupPassword, signupLocation);
+            await signup(signupName, signupEmail, signupPassword, signupCollege, signupCourse);
             toast.success('OTP sent to your email. Verify to continue.');
             navigate(`/verify-otp?email=${encodeURIComponent(signupEmail)}`);
         } catch (error) {
@@ -223,14 +251,40 @@ export default function AuthPage() {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="signup-location">Campus/Location (optional)</Label>
+                                        <Label htmlFor="signup-college">College</Label>
+                                        <Select
+                                            value={signupCollege}
+                                            onValueChange={(value) => {
+                                                setSignupCollege(value);
+                                                if (value) {
+                                                    setSignupCollegeError('');
+                                                }
+                                            }}
+                                        >
+                                            <SelectTrigger id="signup-college" data-testid="signup-college-select">
+                                                <SelectValue placeholder="Select your college" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {COLLEGE_OPTIONS.map((college) => (
+                                                    <SelectItem key={college} value={college}>
+                                                        {college}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {signupCollegeError ? (
+                                            <p className="text-sm text-destructive" data-testid="signup-college-error">{signupCollegeError}</p>
+                                        ) : null}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="signup-course">Course (optional)</Label>
                                         <Input
-                                            id="signup-location"
+                                            id="signup-course"
                                             type="text"
-                                            placeholder="e.g., North Campus"
-                                            value={signupLocation}
-                                            onChange={(e) => setSignupLocation(e.target.value)}
-                                            data-testid="signup-location-input"
+                                            placeholder="e.g., B.Tech CSE"
+                                            value={signupCourse}
+                                            onChange={(e) => setSignupCourse(e.target.value)}
+                                            data-testid="signup-course-input"
                                         />
                                     </div>
                                     <Button

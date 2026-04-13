@@ -48,12 +48,13 @@ export const AuthProvider = ({ children }) => {
         return userData;
     };
 
-    const signup = async (name, email, password, location) => {
+    const signup = async (name, email, password, college, course) => {
         const response = await axios.post(`${API}/auth/signup`, {
             name,
             email,
             password,
-            location: location || 'Campus'
+            college,
+            course: course || null
         });
         return response.data;
     };
