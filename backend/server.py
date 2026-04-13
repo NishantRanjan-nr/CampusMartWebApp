@@ -45,6 +45,10 @@ SMTP_USE_SSL = os.environ.get('SMTP_USE_SSL', 'false').strip().lower() == 'true'
 SMTP_TIMEOUT = int(os.environ.get('SMTP_TIMEOUT', '30'))
 SMTP_ENABLED = bool(SMTP_USER and SMTP_PASS)
 
+# Resolve transport mode defensively so common env mismatches do not break delivery.
+SMTP_EFFECTIVE_SSL = SMTP_USE_SSL or SMTP_PORT == 465
+SMTP_EFFECTIVE_TLS = SMTP_USE_TLS and not SMTP_EFFECTIVE_SSL
+
 # Create the main app with redirect_slashes enabled (default behavior)
 app = FastAPI(title="CampusMart API")
 
@@ -339,15 +343,15 @@ async def send_email(to_email: str, subject: str, body: str) -> bool:
         message["To"] = to_email
         message.set_content(body)
 
-        # Support both explicit TLS (587) and SSL (465) depending on provider/network constraints.
-        if SMTP_USE_SSL:
+        # Use effective mode so port-based SSL works even if env flags are mismatched.
+        if SMTP_EFFECTIVE_SSL:
             with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT, context=ssl.create_default_context()) as smtp:
                 smtp.login(SMTP_USER, SMTP_PASS)
                 smtp.send_message(message)
         else:
             with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as smtp:
                 smtp.ehlo()
-                if SMTP_USE_TLS:
+                if SMTP_EFFECTIVE_TLS:
                     smtp.starttls(context=ssl.create_default_context())
                     smtp.ehlo()
                 smtp.login(SMTP_USER, SMTP_PASS)
@@ -364,8 +368,8 @@ async def send_email(to_email: str, subject: str, body: str) -> bool:
             "SMTP connection timed out (host=%s port=%s tls=%s ssl=%s timeout=%ss)",
             SMTP_HOST,
             SMTP_PORT,
-            SMTP_USE_TLS,
-            SMTP_USE_SSL,
+            SMTP_EFFECTIVE_TLS,
+            SMTP_EFFECTIVE_SSL,
             SMTP_TIMEOUT,
         )
         return False
@@ -1251,6 +1255,17 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+logger.info(
+    "SMTP config loaded (enabled=%s host=%s port=%s tls=%s ssl=%s from=%s user=%s)",
+    SMTP_ENABLED,
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_EFFECTIVE_TLS,
+    SMTP_EFFECTIVE_SSL,
+    SMTP_FROM,
+    SMTP_USER,
+)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
