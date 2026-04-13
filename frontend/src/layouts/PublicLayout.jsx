@@ -188,7 +188,7 @@ export default function PublicLayout() {
                         </div>
                     </div>
                     <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
-                        <p>&copy; {new Date().getFullYear()} CampusMart. Made for students, by students.</p>
+                        <p>&copy; {new Date().getFullYear()} CampusMart. Made for students, by students. --Nr.</p>
                     </div>
                 </div>
             </footer>
