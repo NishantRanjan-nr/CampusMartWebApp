@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -337,8 +337,7 @@ export default function LandingPage() {
                                         transition={{ duration: 0.45, delay: index * 0.08 }}
                                         viewport={{ once: true, amount: 0.25 }}
                                     >
-                                        <Link to={`/item/${item.id}`} data-testid={`featured-item-${item.id}`}>
-                                            <Card className="group h-full overflow-hidden border-white/10 bg-white/5 text-white transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:shadow-[0_24px_80px_rgba(15,23,42,0.35)]">
+                                            <Card className="group h-full overflow-hidden border-white/10 bg-white/5 text-white transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:shadow-[0_24px_80px_rgba(15,23,42,0.35)]" data-testid={`featured-item-${item.id}`}>
                                                 <div className="aspect-[4/5] overflow-hidden bg-white/10">
                                                     {item.images?.[0] ? (
                                                         <img
@@ -381,7 +380,6 @@ export default function LandingPage() {
                                                     </div>
                                                 </CardContent>
                                             </Card>
-                                        </Link>
                                     </motion.div>
                                 ))}
                             </div>

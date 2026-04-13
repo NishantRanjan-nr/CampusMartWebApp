@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -35,7 +35,6 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
     return (
         <Card className="group overflow-hidden card-hover" data-testid={`product-card-${product.id}`}>
             <div className="aspect-square overflow-hidden bg-muted relative">
-                <Link to={`/item/${product.id}`}>
                     {imageSrc ? (
                         <img
                             src={imageSrc}
@@ -50,7 +49,6 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
                             No image
                         </div>
                     )}
-                </Link>
 
                 <Badge
                     className={`absolute top-3 left-3 ${
@@ -65,11 +63,9 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
 
             <CardContent className="p-4 space-y-3">
                 <div>
-                    <Link to={`/item/${product.id}`}>
-                        <h3 className="font-heading font-semibold text-lg truncate group-hover:text-primary transition-colors">
+                        <h3 className="font-heading font-semibold text-lg truncate">
                             {product.title}
                         </h3>
-                    </Link>
                     <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
                 </div>
 

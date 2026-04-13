@@ -690,6 +690,7 @@ async def get_items(
     skip: int = 0
 ):
     query = {"is_available": True}
+    and_conditions = []
     
     if category:
         query["category"] = category
@@ -699,17 +700,19 @@ async def get_items(
             price_query["$gte"] = min_price
         if max_price is not None:
             price_query["$lte"] = max_price
-        query["$or"] = [
+        and_conditions.append({"$or": [
             {"price": price_query},
             {"price_per_day": price_query},
-        ]
+        ]})
     if location:
         query["location"] = {"$regex": location, "$options": "i"}
     if search:
-        query["$or"] = [
+        and_conditions.append({"$or": [
             {"title": {"$regex": search, "$options": "i"}},
             {"description": {"$regex": search, "$options": "i"}}
-        ]
+        ]})
+    if and_conditions:
+        query["$and"] = and_conditions
     
     items = await db.items.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
     return [ItemResponse(**item) for item in items]

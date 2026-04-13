@@ -22,7 +22,7 @@ import {
 import { toast } from 'sonner';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Plus, DotsThree, Pencil, Trash, Eye, Star, Package } from '@phosphor-icons/react';
+import { Plus, DotsThree, Pencil, Trash, Star, Package } from '@phosphor-icons/react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -183,12 +183,7 @@ export default function MyListings() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem asChild>
-                                                    <Link to={`/item/${item.id}`} className="flex items-center">
-                                                        <Eye className="w-4 h-4 mr-2" />
-                                                        View
-                                                    </Link>
-                                                </DropdownMenuItem>
+
                                                 <DropdownMenuItem asChild>
                                                     <Link to={`/dashboard/edit-item/${item.id}`} className="flex items-center" data-testid={`edit-item-${item.id}`}>
                                                         <Pencil className="w-4 h-4 mr-2" />

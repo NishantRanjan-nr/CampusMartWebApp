@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -37,73 +37,12 @@ export default function BrowsePage() {
     // Filters
     const [search, setSearch] = useState(searchParams.get('search') || '');
     const [category, setCategory] = useState(searchParams.get('category') || '');
-
-    // Store products
-    const [storeProducts, setStoreProducts] = useState([]);
-    const [storeSearch, setStoreSearch] = useState('');
-    const [storeCategory, setStoreCategory] = useState('all');
-    const [storeLoading, setStoreLoading] = useState(true);
-
-    const filteredStoreProducts = useMemo(() => {
-        const query = storeSearch.trim().toLowerCase();
-        const keywordTokens = query
-            .split(/\s+/)
-            .filter((token) => token.length > 0);
-
-        return storeProducts.filter((product) => {
-            const productTitle = product.title.toLowerCase();
-            const productCategory = product.category.toLowerCase();
-            const productDescription = (product.description || '').toLowerCase();
-
-            const matchesSearch = keywordTokens.length === 0 ||
-                keywordTokens.every((token) =>
-                    productTitle.includes(token) ||
-                    productCategory.includes(token) ||
-                    productDescription.includes(token)
-                );
-
-            let matchesCategory;
-            if (storeCategory === 'all') {
-                matchesCategory = true;
-            } else if (storeCategory === 'clothes') {
-                matchesCategory = productCategory.includes('clothing') || productCategory.includes('men') || productCategory.includes('women');
-            } else if (storeCategory === 'books') {
-                matchesCategory = productCategory.includes('book');
-            } else {
-                matchesCategory = productCategory === storeCategory.toLowerCase();
-            }
-
-            return matchesSearch && matchesCategory;
-        });
-    }, [storeProducts, storeSearch, storeCategory]);
     const [sortBy, setSortBy] = useState('newest');
+
     useEffect(() => {
         fetchItems();
     }, [searchParams]);
 
-    useEffect(() => {
-        if (category) {
-            setStoreCategory(category.toLowerCase());
-        } else {
-            setStoreCategory('all');
-        }
-    }, [category]);
-
-    useEffect(() => {
-        const fetchStoreProducts = async () => {
-            setStoreLoading(true);
-            try {
-                const response = await axios.get('https://fakestoreapi.com/products');
-                setStoreProducts(response.data);
-            } catch (error) {
-                console.error('Failed to fetch store products:', error);
-            } finally {
-                setStoreLoading(false);
-            }
-        };
-
-        fetchStoreProducts();
-    }, []);
     const fetchItems = async () => {
         setLoading(true);
         try {
@@ -226,7 +165,6 @@ export default function BrowsePage() {
         });
 
         appendLocalRequest(response.data.request);
-
         toast.success('Rent request submitted');
     };
 
@@ -292,37 +230,13 @@ export default function BrowsePage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <div className="w-full lg:w-96">
-                            <Input
-                                type="text"
-                                placeholder="Search products..."
-                                value={storeSearch}
-                                onChange={(e) => setStoreSearch(e.target.value)}
-                                className="w-full h-10"
-                                data-testid="store-search-input"
-                            />
-                        </div>
-
-                        <Select value={storeCategory} onValueChange={setStoreCategory}>
-                            <SelectTrigger className="w-48 h-10" data-testid="store-category-select">
-                                <SelectValue placeholder="All Categories" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Categories</SelectItem>
-                                <SelectItem value="electronics">Electronics</SelectItem>
-                                <SelectItem value="books">Books</SelectItem>
-                                <SelectItem value="jewelery">Jewelery</SelectItem>
-                                <SelectItem value="men's clothing">Men's Clothing</SelectItem>
-                                <SelectItem value="women's clothing">Women's Clothing</SelectItem>
-                            </SelectContent>
-                        </Select>
                         {/* Search */}
                         <form onSubmit={handleSearch} className="flex gap-2">
                             <div className="relative">
                                 <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                 <Input
                                     type="text"
-                                    placeholder="Search..."
+                                    placeholder="Search listings..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="pl-9 w-48 lg:w-64 h-10"
@@ -363,49 +277,6 @@ export default function BrowsePage() {
                     </div>
                 </div>
 
-                <section className="mb-8">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-heading font-bold">Store Products</h2>
-                        <span className="text-sm text-muted-foreground">
-                            {storeLoading ? 'Loading...' : `${filteredStoreProducts.length} results`}
-                            {storeCategory !== 'all' && ` in ${storeCategory}`}
-                        </span>
-                    </div>
-
-                    {storeLoading ? (
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {[...Array(8)].map((_, index) => (
-                                <Card key={index} className="p-4 animate-pulse">
-                                    <div className="h-40 bg-muted rounded-md mb-3" />
-                                    <div className="h-4 bg-muted rounded mb-2" />
-                                    <div className="h-4 w-1/2 bg-muted rounded" />
-                                </Card>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {filteredStoreProducts.map((product) => (
-                                <Link key={product.id} to={`/item/${product.id}`} className="block">
-                                    <Card className="hover:shadow-xl transition-all">
-                                        <div className="h-44 w-full overflow-hidden rounded-md bg-white">
-                                            <img
-                                                src={product.image}
-                                                alt={product.title}
-                                                className="h-full w-full object-contain p-4"
-                                            />
-                                        </div>
-                                        <CardContent className="p-3">
-                                            <h3 className="text-sm font-semibold line-clamp-2" title={product.title}>
-                                                {product.title}
-                                            </h3>
-                                            <p className="text-base font-bold text-primary mt-2">₹{product.price.toFixed(2)}</p>
-                                        </CardContent>
-                                    </Card>
-                                </Link>
-                            ))}
-                        </div>
-                    )}
-                </section>
                 <div className="flex gap-8">
                     {/* Desktop Sidebar Filters */}
                     <aside className="hidden lg:block w-64 flex-shrink-0" data-testid="filter-sidebar">

@@ -11,9 +11,9 @@ import {
     SelectValue,
 } from '../ui/select';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
-import { Card, CardContent } from '../ui/card';
-import { UploadSimple, X } from '@phosphor-icons/react';
+import { UploadSimple, X, ImageSquare, CircleNotch } from '@phosphor-icons/react';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 const baseFormState = {
     title: '',
@@ -32,6 +32,7 @@ const baseFormState = {
 export default function UploadForm({ initialValues, loading, submitLabel, onSubmit }) {
     const [formData, setFormData] = useState({ ...baseFormState, ...(initialValues || {}) });
     const [pendingFiles, setPendingFiles] = useState([]);
+    const [pendingPreviews, setPendingPreviews] = useState([]);
     const [uploadingImages, setUploadingImages] = useState(false);
     const fileInputRef = useRef(null);
 
@@ -43,15 +44,26 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
             const normalizedImages = Array.isArray(initialValues.images)
                 ? initialValues.images.map((image) => String(image))
                 : [];
-            console.log('UploadForm received images:', normalizedImages);
             setFormData({
                 ...baseFormState,
                 ...initialValues,
                 images: normalizedImages,
             });
             setPendingFiles([]);
+            setPendingPreviews([]);
         }
     }, [initialValues]);
+
+    // Generate preview URLs for pending files
+    useEffect(() => {
+        const previews = pendingFiles.map((file) => URL.createObjectURL(file));
+        setPendingPreviews(previews);
+
+        // Cleanup blob URLs on unmount or when files change
+        return () => {
+            previews.forEach((url) => URL.revokeObjectURL(url));
+        };
+    }, [pendingFiles]);
 
     const normalizedType = useMemo(() => (formData.type === 'rent' ? 'rent' : 'sell'), [formData.type]);
 
@@ -71,19 +83,20 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
 
     const uploadToCloudinary = async (file) => {
         if (!cloudName || !uploadPreset) {
-            throw new Error('Cloudinary environment variables are missing');
+            throw new Error(
+                'Cloudinary is not configured. Please set REACT_APP_CLOUDINARY_CLOUD_NAME and REACT_APP_CLOUDINARY_UPLOAD_PRESET in your .env file.'
+            );
         }
 
         const cloudinaryForm = new FormData();
         cloudinaryForm.append('file', file);
         cloudinaryForm.append('upload_preset', uploadPreset);
 
+        // Do NOT set Content-Type manually — axios + browser will auto-set
+        // the correct multipart/form-data boundary when body is FormData.
         const response = await axios.post(
             `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-            cloudinaryForm,
-            {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            }
+            cloudinaryForm
         );
 
         return response.data.secure_url;
@@ -103,6 +116,10 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
         }
     };
 
+    const removePendingFile = (index) => {
+        setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
     const removeImage = (index) => {
         setImages((prev) => prev.filter((_, i) => i !== index));
     };
@@ -111,9 +128,16 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
         const uploadedUrls = [];
 
         for (const file of pendingFiles) {
-            const uploadedUrl = await uploadToCloudinary(file);
-            uploadedUrls.push(uploadedUrl);
-            console.log('UploadForm uploaded image URL:', uploadedUrl);
+            try {
+                const uploadedUrl = await uploadToCloudinary(file);
+                uploadedUrls.push(uploadedUrl);
+            } catch (error) {
+                const detail =
+                    error?.response?.data?.error?.message ||
+                    error?.message ||
+                    'Upload failed';
+                throw new Error(`Failed to upload "${file.name}": ${detail}`);
+            }
         }
 
         return uploadedUrls;
@@ -129,16 +153,18 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
             const uploadedUrls = await uploadImages();
             const combinedImages = [...(formData.images || []).map((image) => String(image)), ...uploadedUrls];
             const nextFormData = { ...formData, images: combinedImages, type: normalizedType };
-            console.log('UploadForm images after upload:', uploadedUrls);
-            console.log('UploadForm images before API call:', combinedImages);
             await onSubmit(nextFormData);
+            // Only clear pending files after successful submit
+            setPendingFiles([]);
         } catch (error) {
-            console.error('Cloudinary upload failed:', error);
+            console.error('Image upload error:', error);
+            toast.error(error.message || 'Failed to upload images. Please try again.');
         } finally {
             setUploadingImages(false);
-            setPendingFiles([]);
         }
     };
+
+    const totalImages = formData.images.length + pendingFiles.length;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6" data-testid="upload-form">
@@ -302,11 +328,11 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
                         type="button"
                         variant="outline"
                         onClick={() => fileInputRef.current?.click()}
-                        disabled={(formData.images.length + pendingFiles.length) >= 5 || uploadingImages}
+                        disabled={totalImages >= 5 || uploadingImages}
                         data-testid="upload-images-button"
                     >
                         <UploadSimple className="mr-2 h-4 w-4" />
-                        {uploadingImages ? 'Uploading...' : 'Upload Images'}
+                        Add Photos
                     </Button>
                 </div>
                 <Input
@@ -319,48 +345,95 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
                     className="hidden"
                     data-testid="image-file-input"
                 />
-                <p className="text-xs text-muted-foreground">
-                    Pick photos from your device or camera. They will be uploaded to Cloudinary and saved as URLs.
-                </p>
 
-                {pendingFiles.length > 0 && (
-                    <div className="grid sm:grid-cols-2 gap-3">
-                        {pendingFiles.map((file, index) => (
-                            <Card key={`${file.name}-${index}`}>
-                                <CardContent className="p-3 flex items-center justify-between gap-2">
-                                    <span className="text-xs truncate">{file.name}</span>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setPendingFiles((prev) => prev.filter((_, i) => i !== index))}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </CardContent>
-                            </Card>
+                {/* Image preview grid — uploaded + pending */}
+                {(formData.images.length > 0 || pendingFiles.length > 0) ? (
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                        {/* Already-uploaded images */}
+                        {formData.images.map((url, index) => (
+                            <div
+                                key={`uploaded-${index}`}
+                                className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted"
+                            >
+                                <img
+                                    src={url}
+                                    alt={`Listing ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                    }}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => removeImage(index)}
+                                >
+                                    <X className="h-3 w-3" />
+                                </Button>
+                            </div>
                         ))}
+
+                        {/* Pending files — local previews */}
+                        {pendingFiles.map((file, index) => (
+                            <div
+                                key={`pending-${file.name}-${index}`}
+                                className="relative group aspect-square rounded-lg overflow-hidden border-2 border-dashed border-primary/40 bg-muted"
+                            >
+                                <img
+                                    src={pendingPreviews[index]}
+                                    alt={file.name}
+                                    className="w-full h-full object-cover"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => removePendingFile(index)}
+                                >
+                                    <X className="h-3 w-3" />
+                                </Button>
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1.5 py-0.5">
+                                    <span className="text-[10px] text-white truncate block">Ready to upload</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div
+                        className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-6 cursor-pointer hover:border-primary/40 transition-colors"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <ImageSquare className="w-10 h-10 text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">Click to add photos</p>
                     </div>
                 )}
 
-                {formData.images.length > 0 && (
-                    <div className="grid sm:grid-cols-2 gap-3">
-                        {formData.images.map((image, index) => (
-                            <Card key={`${image}-${index}`}>
-                                <CardContent className="p-3 flex items-center justify-between gap-2">
-                                    <span className="text-xs truncate">{image}</span>
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeImage(index)}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+                {totalImages > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                        {formData.images.length} uploaded, {pendingFiles.length} ready to upload — {5 - totalImages} slots remaining
+                    </p>
                 )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading} data-testid="submit-upload-form">
-                {loading ? 'Saving...' : submitLabel}
+            <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || uploadingImages}
+                data-testid="submit-upload-form"
+            >
+                {uploadingImages ? (
+                    <>
+                        <CircleNotch className="mr-2 h-4 w-4 animate-spin" />
+                        Uploading images...
+                    </>
+                ) : loading ? (
+                    'Saving...'
+                ) : (
+                    submitLabel
+                )}
             </Button>
         </form>
     );
