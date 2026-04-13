@@ -22,6 +22,8 @@ SMTP_USER=your-email@gmail.com
 SMTP_PASS=xxxx xxxx xxxx xxxx  # Use the 16 characters (without spaces)
 SMTP_FROM=noreply@campusmart.local
 SMTP_USE_TLS=true
+SMTP_USE_SSL=false
+SMTP_TIMEOUT=30
 ```
 
 ## Testing SMTP Configuration
@@ -95,6 +97,7 @@ If you didn't request this code, please ignore this email.
 |-------|-------|----------|
 | "SMTP authentication failed" | Wrong password | Use 16-char App Password, not Gmail password |
 | "Connection timeout" | SMTP_HOST/PORT wrong | Verify SMTP_HOST=smtp.gmail.com, SMTP_PORT=587 |
+| "Connection timeout" on Render | Port 587 blocked/slow from host network | Try SMTP_USE_SSL=true and SMTP_PORT=465 |
 | Emails not arriving | 2FA not enabled | Enable 2-Step Verification first |
 | Still not working after 2FA | Google blocking | Check https://myaccount.google.com/security for alerts |
 
@@ -168,5 +171,7 @@ await _send_otp_email(user_data.email, otp)
 | SMTP_PASS | Yes*  | (empty) | xxxx xxxx xxxx xxxx |
 | SMTP_FROM | No | SMTP_USER | noreply@campusmart.local |
 | SMTP_USE_TLS | No | true | true or false |
+| SMTP_USE_SSL | No | false | true or false |
+| SMTP_TIMEOUT | No | 30 | 30 |
 
 *Yes = Required for production (dev mode works without them)

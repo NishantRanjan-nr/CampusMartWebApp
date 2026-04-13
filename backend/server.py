@@ -13,6 +13,8 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import random
 import smtplib
+import socket
+import ssl
 from email.message import EmailMessage
 import bcrypt
 import jwt
@@ -39,6 +41,8 @@ SMTP_USER = os.environ.get('SMTP_USER', '').strip()
 SMTP_PASS = os.environ.get('SMTP_PASS', '').replace(' ', '').strip()
 SMTP_FROM = os.environ.get('SMTP_FROM', SMTP_USER or 'noreply@campusmart.local').strip()
 SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').strip().lower() == 'true'
+SMTP_USE_SSL = os.environ.get('SMTP_USE_SSL', 'false').strip().lower() == 'true'
+SMTP_TIMEOUT = int(os.environ.get('SMTP_TIMEOUT', '30'))
 SMTP_ENABLED = bool(SMTP_USER and SMTP_PASS)
 
 # Create the main app with redirect_slashes enabled (default behavior)
@@ -335,17 +339,35 @@ async def send_email(to_email: str, subject: str, body: str) -> bool:
         message["To"] = to_email
         message.set_content(body)
 
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as smtp:
-            if SMTP_USE_TLS:
-                smtp.starttls()
-            smtp.login(SMTP_USER, SMTP_PASS)
-            smtp.send_message(message)
+        # Support both explicit TLS (587) and SSL (465) depending on provider/network constraints.
+        if SMTP_USE_SSL:
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT, context=ssl.create_default_context()) as smtp:
+                smtp.login(SMTP_USER, SMTP_PASS)
+                smtp.send_message(message)
+        else:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as smtp:
+                smtp.ehlo()
+                if SMTP_USE_TLS:
+                    smtp.starttls(context=ssl.create_default_context())
+                    smtp.ehlo()
+                smtp.login(SMTP_USER, SMTP_PASS)
+                smtp.send_message(message)
 
         logging.info("Email sent successfully to %s", to_email)
         return True
 
     except smtplib.SMTPAuthenticationError:
         logging.error("SMTP authentication failed for %s. Check SMTP_USER and Gmail app password.", SMTP_USER)
+        return False
+    except socket.timeout:
+        logging.error(
+            "SMTP connection timed out (host=%s port=%s tls=%s ssl=%s timeout=%ss)",
+            SMTP_HOST,
+            SMTP_PORT,
+            SMTP_USE_TLS,
+            SMTP_USE_SSL,
+            SMTP_TIMEOUT,
+        )
         return False
     except smtplib.SMTPException as e:
         logging.error("SMTP error sending email to %s: %s", to_email, str(e))
