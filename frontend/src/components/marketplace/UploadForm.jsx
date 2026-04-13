@@ -92,14 +92,28 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
         cloudinaryForm.append('file', file);
         cloudinaryForm.append('upload_preset', uploadPreset);
 
-        // Do NOT set Content-Type manually — axios + browser will auto-set
-        // the correct multipart/form-data boundary when body is FormData.
-        const response = await axios.post(
-            `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-            cloudinaryForm
-        );
+        try {
+            const response = await fetch(
+                `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+                {
+                    method: 'POST',
+                    body: cloudinaryForm,
+                }
+            );
 
-        return response.data.secure_url;
+            const data = await response.json();
+            
+            if (!response.ok) {
+                console.error('Cloudinary upload error:', data);
+                throw new Error(data.error?.message || 'Upload to Cloudinary failed');
+            }
+
+            console.log('Cloudinary response:', data);
+            return data.secure_url;
+        } catch (error) {
+            console.error('Error uploading to Cloudinary:', error);
+            throw error;
+        }
     };
 
     const handleFilesSelected = (event) => {
