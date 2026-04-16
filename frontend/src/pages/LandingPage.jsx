@@ -5,6 +5,7 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import { getListingId } from '../lib/listing';
 import {
     MagnifyingGlass,
     ArrowRight,
@@ -330,14 +331,37 @@ export default function LandingPage() {
                         ) : featuredItems.length > 0 ? (
                             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                                 {featuredItems.map((item, index) => (
+                                    (() => {
+                                        const itemId = getListingId(item);
+
+                                        return (
                                     <motion.div
-                                        key={item.id}
+                                        key={itemId || index}
                                         initial={{ opacity: 0, y: 18 }}
                                         whileInView={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.45, delay: index * 0.08 }}
                                         viewport={{ once: true, amount: 0.25 }}
                                     >
-                                            <Card className="group h-full overflow-hidden border-white/10 bg-white/5 text-white transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:shadow-[0_24px_80px_rgba(15,23,42,0.35)]" data-testid={`featured-item-${item.id}`}>
+                                            <Card
+                                                className="group h-full cursor-pointer overflow-hidden border-white/10 bg-white/5 text-white transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:shadow-[0_24px_80px_rgba(15,23,42,0.35)] focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                                                onClick={() => {
+                                                    if (itemId) {
+                                                        navigate(`/item/${itemId}`);
+                                                    }
+                                                }}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter' || event.key === ' ') {
+                                                        event.preventDefault();
+                                                        if (itemId) {
+                                                            navigate(`/item/${itemId}`);
+                                                        }
+                                                    }
+                                                }}
+                                                role="link"
+                                                tabIndex={0}
+                                                aria-label={`View details for ${item.title}`}
+                                                data-testid={`featured-item-${itemId}`}
+                                            >
                                                 <div className="aspect-[4/5] overflow-hidden bg-white/10">
                                                     {item.images?.[0] ? (
                                                         <img
@@ -381,6 +405,8 @@ export default function LandingPage() {
                                                 </CardContent>
                                             </Card>
                                     </motion.div>
+                                        );
+                                    })()
                                 ))}
                             </div>
                         ) : (

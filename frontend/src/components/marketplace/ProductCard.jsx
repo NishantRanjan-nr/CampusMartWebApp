@@ -1,8 +1,10 @@
 
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { MapPin, Star } from '@phosphor-icons/react';
+import { getListingId } from '../../lib/listing';
 
 function getRequestStatus(product, currentUserId) {
     const requests = product.requests || [];
@@ -25,6 +27,8 @@ function getRequestStatus(product, currentUserId) {
 }
 
 export default function ProductCard({ product, onRequestRent, onBuyNow, currentUserId }) {
+    const navigate = useNavigate();
+    const itemId = getListingId(product);
     const isRent = product.type === 'rent';
     const requestStatus = getRequestStatus(product, currentUserId);
     const primaryPrice = isRent
@@ -32,8 +36,34 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
         : product.price ?? 0;
     const imageSrc = product.images?.[0];
 
+    const openItemDetail = () => {
+        if (itemId) {
+            navigate(`/item/${itemId}`);
+        }
+    };
+
+    const handleCardKeyDown = (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openItemDetail();
+        }
+    };
+
+    const stopCardNavigation = (action) => (event) => {
+        event.stopPropagation();
+        action(product);
+    };
+
     return (
-        <Card className="group overflow-hidden card-hover" data-testid={`product-card-${product.id}`}>
+        <Card
+            className="group overflow-hidden card-hover cursor-pointer outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            onClick={openItemDetail}
+            onKeyDown={handleCardKeyDown}
+            role="link"
+            tabIndex={0}
+            aria-label={`View details for ${product.title}`}
+            data-testid={`product-card-${itemId}`}
+        >
             <div className="aspect-square overflow-hidden bg-muted relative">
                     {imageSrc ? (
                         <img
@@ -85,7 +115,7 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
                 </div>
 
                 {requestStatus && (
-                    <div className={`text-xs font-medium ${requestStatus.className}`} data-testid={`request-status-${product.id}`}>
+                    <div className={`text-xs font-medium ${requestStatus.className}`} data-testid={`request-status-${itemId}`}>
                         {requestStatus.label}
                     </div>
                 )}
@@ -95,16 +125,18 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
                         <Button
                             className="w-full"
                             variant="default"
-                            onClick={() => onBuyNow(product)}
-                            data-testid={`buy-action-${product.id}`}
+                            onClick={stopCardNavigation(onBuyNow)}
+                            data-testid={`buy-action-${itemId}`}
+                            type="button"
                         >
                             Buy Now
                         </Button>
                         <Button
                             className="w-full"
                             variant="outline"
-                            onClick={() => onRequestRent(product)}
-                            data-testid={`rent-action-${product.id}`}
+                            onClick={stopCardNavigation(onRequestRent)}
+                            data-testid={`rent-action-${itemId}`}
+                            type="button"
                         >
                             Rent
                         </Button>
@@ -113,8 +145,9 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
                     <Button
                         className="w-full"
                         variant="default"
-                        onClick={() => onBuyNow(product)}
-                        data-testid={`buy-action-${product.id}`}
+                        onClick={stopCardNavigation(onBuyNow)}
+                        data-testid={`buy-action-${itemId}`}
+                        type="button"
                     >
                         Buy Now
                     </Button>

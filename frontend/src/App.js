@@ -10,6 +10,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 // Public Pages
 import LandingPage from "./pages/LandingPage";
 import BrowsePage from "./pages/BrowsePage";
+import ItemDetailPage from "./pages/ItemDetailPage";
 import AuthPage from "./pages/AuthPage";
 import VerifyOtpPage from "./pages/VerifyOtpPage";
 
@@ -50,6 +51,7 @@ function AppRoutes() {
             <Route element={<PublicLayout />}>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/browse" element={<BrowsePage />} />
+                <Route path="/item/:id" element={<ItemDetailPage />} />
 
             </Route>
             

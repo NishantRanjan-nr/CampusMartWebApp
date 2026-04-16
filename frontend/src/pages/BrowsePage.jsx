@@ -21,6 +21,7 @@ import ProductCard from '../components/marketplace/ProductCard';
 import RentModal from '../components/marketplace/RentModal';
 import BuyModal from '../components/marketplace/BuyModal';
 import { useAuth } from '../context/AuthContext';
+import { getListingId } from '../lib/listing';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -131,9 +132,10 @@ export default function BrowsePage() {
 
     const appendLocalRequest = (requestPayload) => {
         if (!selectedProduct) return;
+        const selectedProductId = getListingId(selectedProduct);
 
         setItems((prev) => prev.map((item) => {
-            if (item.id !== selectedProduct.id) return item;
+            if (getListingId(item) !== selectedProductId) return item;
             const nextRequests = [...(item.requests || []), requestPayload];
             return {
                 ...item,
@@ -144,8 +146,11 @@ export default function BrowsePage() {
 
     const handleBuyRequest = async ({ type, paymentMethod }) => {
         if (!selectedProduct) return;
+        const selectedProductId = getListingId(selectedProduct);
 
-        const response = await axios.post(`${API}/request/${selectedProduct.id}`, {
+        if (!selectedProductId) return;
+
+        const response = await axios.post(`${API}/request/${selectedProductId}`, {
             type,
             paymentMethod,
         });
@@ -156,8 +161,11 @@ export default function BrowsePage() {
 
     const handleRentRequest = async ({ type, paymentMethod, startDate, endDate }) => {
         if (!selectedProduct) return;
+        const selectedProductId = getListingId(selectedProduct);
 
-        const response = await axios.post(`${API}/request/${selectedProduct.id}`, {
+        if (!selectedProductId) return;
+
+        const response = await axios.post(`${API}/request/${selectedProductId}`, {
             type,
             paymentMethod,
             startDate,
@@ -304,7 +312,7 @@ export default function BrowsePage() {
                             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {items.map((item, index) => (
                                     <motion.div
-                                        key={item.id}
+                                        key={getListingId(item) || index}
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3, delay: index * 0.05 }}
