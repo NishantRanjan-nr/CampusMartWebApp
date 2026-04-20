@@ -107,6 +107,15 @@ class UserResponse(BaseModel):
     created_at: str
     avatar: Optional[str] = None
 
+
+class PublicSellerResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    college: str
+    course: Optional[str] = None
+    avatar: Optional[str] = None
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -216,6 +225,8 @@ class ItemResponse(BaseModel):
     owner_id: str
     owner_name: str
     owner_avatar: Optional[str] = None
+    owner_college: Optional[str] = None
+    owner_course: Optional[str] = None
     title: str
     description: str
     category: str
@@ -268,6 +279,10 @@ class MessageCreate(BaseModel):
     content: str
     item_id: Optional[str] = None
 
+
+class ChatMessageCreate(BaseModel):
+    content: str
+
 class MessageResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
@@ -287,6 +302,21 @@ class ConversationResponse(BaseModel):
     last_message: str
     last_message_time: str
     unread_count: int
+
+
+class ChatThreadItemResponse(BaseModel):
+    id: str
+    title: str
+    owner_id: str
+    owner_name: str
+    owner_avatar: Optional[str] = None
+    images: List[str] = []
+
+
+class ChatThreadResponse(BaseModel):
+    item: ChatThreadItemResponse
+    seller: PublicSellerResponse
+    messages: List[MessageResponse]
 
 # Review Models
 class ReviewCreate(BaseModel):
@@ -459,6 +489,22 @@ def _apply_item_update_payload(existing_item: dict, update_data: dict) -> dict:
 
     return updated
 
+
+async def _enrich_item_owner_fields(item: dict) -> dict:
+    if item.get("owner_college") and item.get("owner_course"):
+        return item
+
+    owner = await db.users.find_one({"id": item.get("owner_id")}, {"_id": 0})
+    if not owner:
+        return item
+
+    enriched_item = dict(item)
+    enriched_item["owner_college"] = _get_user_college(owner)
+    enriched_item["owner_course"] = owner.get("course")
+    enriched_item.setdefault("owner_avatar", owner.get("avatar"))
+    enriched_item.setdefault("owner_name", owner.get("name", "Unknown"))
+    return enriched_item
+
 # ===================== AUTH ROUTES =====================
 
 @auth_router.post("/signup", response_model=SignupResponse)
@@ -602,6 +648,21 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         avatar=current_user.get("avatar")
     )
 
+
+@api_router.get("/users/{user_id}", response_model=PublicSellerResponse)
+async def get_public_user(user_id: str):
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return PublicSellerResponse(
+        id=user["id"],
+        name=user["name"],
+        college=_get_user_college(user),
+        course=user.get("course"),
+        avatar=user.get("avatar"),
+    )
+
 # Backward-compatible endpoint for requested /register path
 @app.post("/register", response_model=SignupResponse)
 async def register_main(user_data: UserCreate):
@@ -657,6 +718,8 @@ async def create_item(item_data: ItemCreate, current_user: dict = Depends(get_cu
         "owner_id": current_user["id"],
         "owner_name": current_user["name"],
         "owner_avatar": current_user.get("avatar"),
+        "owner_college": _get_user_college(current_user),
+        "owner_course": current_user.get("course"),
         "title": item_data.title,
         "description": item_data.description,
         "category": item_data.category,
@@ -732,7 +795,8 @@ async def get_item(item_id: str):
     item = await db.items.find_one({"id": item_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-    return ItemResponse(**item)
+    enriched_item = await _enrich_item_owner_fields(item)
+    return ItemResponse(**enriched_item)
 
 @items_router.put("/{item_id}", response_model=ItemResponse)
 async def update_item(item_id: str, item_data: ItemUpdate, current_user: dict = Depends(get_current_user)):
@@ -1047,6 +1111,98 @@ async def send_message(msg_data: MessageCreate, current_user: dict = Depends(get
     
     await db.messages.insert_one(message)
     return MessageResponse(**message)
+
+
+@messages_router.post("/thread/{item_id}", response_model=MessageResponse)
+async def send_item_message(
+    item_id: str,
+    msg_data: ChatMessageCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    item = await db.items.find_one({"id": item_id}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    receiver = await db.users.find_one({"id": item["owner_id"]}, {"_id": 0})
+    if not receiver:
+        raise HTTPException(status_code=404, detail="Seller not found")
+
+    if item["owner_id"] == current_user["id"]:
+        raise HTTPException(status_code=400, detail="Cannot chat with your own listing")
+
+    msg_id = str(uuid.uuid4())
+    content = msg_data.content.strip()
+    if not content:
+        raise HTTPException(status_code=422, detail="Message content is required")
+
+    message = {
+        "id": msg_id,
+        "sender_id": current_user["id"],
+        "sender_name": current_user["name"],
+        "receiver_id": receiver["id"],
+        "receiver_name": receiver["name"],
+        "content": content,
+        "item_id": item_id,
+        "is_read": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.messages.insert_one(message)
+    return MessageResponse(**message)
+
+
+@messages_router.get("/thread/{item_id}", response_model=ChatThreadResponse)
+async def get_item_thread(item_id: str, current_user: dict = Depends(get_current_user)):
+    item = await db.items.find_one({"id": item_id}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    seller = await db.users.find_one({"id": item["owner_id"]}, {"_id": 0})
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller not found")
+
+    if item["owner_id"] == current_user["id"]:
+        raise HTTPException(status_code=400, detail="Listing owners should use the dashboard messages page")
+
+    messages = await db.messages.find(
+        {
+            "item_id": item_id,
+            "$or": [
+                {"sender_id": current_user["id"], "receiver_id": item["owner_id"]},
+                {"sender_id": item["owner_id"], "receiver_id": current_user["id"]},
+            ],
+        },
+        {"_id": 0},
+    ).sort("created_at", 1).to_list(200)
+
+    await db.messages.update_many(
+        {
+            "item_id": item_id,
+            "sender_id": item["owner_id"],
+            "receiver_id": current_user["id"],
+            "is_read": False,
+        },
+        {"$set": {"is_read": True}},
+    )
+
+    return ChatThreadResponse(
+        item=ChatThreadItemResponse(
+            id=item["id"],
+            title=item["title"],
+            owner_id=item["owner_id"],
+            owner_name=item.get("owner_name", seller.get("name", "Seller")),
+            owner_avatar=item.get("owner_avatar") or seller.get("avatar"),
+            images=[str(image) for image in item.get("images", []) if image],
+        ),
+        seller=PublicSellerResponse(
+            id=seller["id"],
+            name=seller["name"],
+            college=_get_user_college(seller),
+            course=seller.get("course"),
+            avatar=seller.get("avatar"),
+        ),
+        messages=[MessageResponse(**message) for message in messages],
+    )
 
 @messages_router.get("/conversations", response_model=List[ConversationResponse])
 async def get_conversations(current_user: dict = Depends(get_current_user)):

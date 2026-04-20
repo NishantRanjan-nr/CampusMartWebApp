@@ -6,6 +6,7 @@ import { ArrowLeft, MapPin, Star } from '@phosphor-icons/react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { useAuth } from '../context/AuthContext';
 import { getListingId } from '../lib/listing';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -21,7 +22,9 @@ function formatCurrency(value) {
 export default function ItemDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { isAuthenticated, user } = useAuth();
     const [item, setItem] = useState(null);
+    const [seller, setSeller] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeImage, setActiveImage] = useState(0);
@@ -36,8 +39,24 @@ export default function ItemDetailPage() {
             try {
                 const response = await axios.get(`${API}/items/${id}`);
                 if (isMounted) {
-                    setItem(response.data);
+                    const itemData = response.data;
+                    setItem(itemData);
                     setActiveImage(0);
+
+                    if (itemData?.owner_id) {
+                        try {
+                            const sellerResponse = await axios.get(`${API}/users/${itemData.owner_id}`);
+                            if (isMounted) {
+                                setSeller(sellerResponse.data);
+                            }
+                        } catch (sellerError) {
+                            if (isMounted) {
+                                setSeller(null);
+                            }
+                        }
+                    } else if (isMounted) {
+                        setSeller(null);
+                    }
                 }
             } catch (fetchError) {
                 if (!isMounted) return;
@@ -69,6 +88,11 @@ export default function ItemDetailPage() {
     const images = Array.isArray(item?.images) ? item.images.filter(Boolean) : [];
     const primaryImage = images[activeImage] || images[0] || '';
     const price = item?.price ?? item?.rentDetails?.pricePerDay ?? item?.price_per_day ?? 0;
+    const sellerName = seller?.name || item?.owner_name || 'Seller';
+    const sellerCollege = seller?.college || item?.owner_college || 'Not set';
+    const sellerCourse = seller?.course || item?.owner_course || 'Not set';
+    const sellerInitial = sellerName?.charAt?.(0)?.toUpperCase() || 'S';
+    const canChatWithSeller = Boolean(item?.owner_id && user?.id !== item.owner_id);
 
     if (loading) {
         return (
@@ -217,6 +241,41 @@ export default function ItemDetailPage() {
                                 <div className="rounded-2xl border border-border p-4">
                                     <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Availability</div>
                                     <div className="mt-2 text-sm font-medium">{item?.is_available === false ? 'Unavailable' : 'Available'}</div>
+                                </div>
+                            </div>
+                        </Card>
+
+                        <Card className="p-6">
+                            <h2 className="text-lg font-semibold">Seller details</h2>
+                            <div className="mt-4 flex items-start gap-4 rounded-2xl border border-border p-4">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                                    {sellerInitial}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="text-base font-medium">{sellerName}</div>
+                                    <div className="mt-1 text-sm text-muted-foreground">
+                                        <span className="font-medium text-foreground">College:</span> {sellerCollege}
+                                    </div>
+                                    <div className="mt-1 text-sm text-muted-foreground">
+                                        <span className="font-medium text-foreground">Course:</span> {sellerCourse}
+                                    </div>
+                                    <div className="mt-4">
+                                        {isAuthenticated ? (
+                                            canChatWithSeller ? (
+                                                <Button onClick={() => navigate(`/chat/${id}`)} className="w-full sm:w-auto">
+                                                    Chat with Seller
+                                                </Button>
+                                            ) : (
+                                                <Button variant="outline" disabled className="w-full sm:w-auto">
+                                                    This is your listing
+                                                </Button>
+                                            )
+                                        ) : (
+                                            <Button asChild className="w-full sm:w-auto">
+                                                <Link to="/auth">Sign in to chat</Link>
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </Card>

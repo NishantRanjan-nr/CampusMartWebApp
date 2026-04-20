@@ -11,6 +11,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import LandingPage from "./pages/LandingPage";
 import BrowsePage from "./pages/BrowsePage";
 import ItemDetailPage from "./pages/ItemDetailPage";
+import ChatPage from "./pages/ChatPage";
 import AuthPage from "./pages/AuthPage";
 import VerifyOtpPage from "./pages/VerifyOtpPage";
 
@@ -58,6 +59,11 @@ function AppRoutes() {
             {/* Auth Routes */}
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/verify-otp" element={<VerifyOtpPage />} />
+            <Route path="/chat/:itemId" element={
+                <ProtectedRoute>
+                    <ChatPage />
+                </ProtectedRoute>
+            } />
             
             {/* Dashboard Routes */}
             <Route path="/dashboard" element={
