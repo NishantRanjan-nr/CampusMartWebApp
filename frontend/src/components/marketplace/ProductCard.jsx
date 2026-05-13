@@ -56,7 +56,7 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
 
     return (
         <Card
-            className="group overflow-hidden card-hover cursor-pointer outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="group overflow-hidden rounded-[1.5rem] border border-border/70 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_80px_rgba(15,23,42,0.12)] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-card dark:shadow-none"
             onClick={openItemDetail}
             onKeyDown={handleCardKeyDown}
             role="link"
@@ -64,53 +64,46 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
             aria-label={`View details for ${product.title}`}
             data-testid={`product-card-${itemId}`}
         >
-            <div className="aspect-square overflow-hidden bg-muted relative">
-                    {imageSrc ? (
-                        <img
-                            src={imageSrc}
-                            alt="listing"
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            onError={(event) => {
-                                event.currentTarget.style.display = 'none';
-                            }}
-                        />
-                    ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 text-xs font-medium uppercase tracking-[0.2em] text-slate-400">
-                            No image
-                        </div>
-                    )}
+            <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                {imageSrc ? (
+                    <img
+                        src={imageSrc}
+                        alt={product.title}
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        onError={(event) => {
+                            event.currentTarget.style.display = 'none';
+                        }}
+                    />
+                ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        No image
+                    </div>
+                )}
 
-                <Badge
-                    className={`absolute top-3 left-3 ${
-                        isRent
-                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                            : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                    }`}
-                >
+                <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-950/65 to-transparent" />
+                <Badge className={`absolute left-4 top-4 rounded-full px-3 py-1 ${isRent ? 'bg-white/90 text-slate-950' : 'bg-slate-950/85 text-white'}`}>
                     {isRent ? 'For Rent' : 'For Sale'}
                 </Badge>
             </div>
 
-            <CardContent className="p-4 space-y-3">
-                <div>
-                        <h3 className="font-heading font-semibold text-lg truncate">
-                            {product.title}
-                        </h3>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+            <CardContent className="space-y-4 p-5">
+                <div className="space-y-2">
+                    <h3 className="line-clamp-1 font-heading text-lg font-semibold tracking-[-0.03em] text-foreground">{product.title}</h3>
+                    <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">{product.description}</p>
                 </div>
 
-                <div className="flex items-center justify-between">
-                    <span className="font-bold text-primary">
+                <div className="flex items-center justify-between gap-3">
+                    <span className="font-semibold text-foreground">
                         {isRent ? `INR ${primaryPrice}/day` : `INR ${primaryPrice}`}
                     </span>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Star className="w-4 h-4 text-amber-500" weight="fill" />
+                    <div className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm text-muted-foreground">
+                        <Star className="h-4 w-4 text-amber-500" weight="fill" />
                         <span>{product.avg_rating?.toFixed(1) || '0.0'}</span>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="w-3 h-3" />
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <MapPin className="h-4 w-4 shrink-0" />
                     <span className="truncate">{product.location}</span>
                 </div>
 
@@ -123,16 +116,16 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
                 {isRent ? (
                     <div className="grid grid-cols-2 gap-2">
                         <Button
-                            className="w-full"
+                            className="w-full rounded-full"
                             variant="default"
                             onClick={stopCardNavigation(onBuyNow)}
                             data-testid={`buy-action-${itemId}`}
                             type="button"
                         >
-                            Buy Now
+                            Buy
                         </Button>
                         <Button
-                            className="w-full"
+                            className="w-full rounded-full"
                             variant="outline"
                             onClick={stopCardNavigation(onRequestRent)}
                             data-testid={`rent-action-${itemId}`}
@@ -143,7 +136,7 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
                     </div>
                 ) : (
                     <Button
-                        className="w-full"
+                        className="w-full rounded-full"
                         variant="default"
                         onClick={stopCardNavigation(onBuyNow)}
                         data-testid={`buy-action-${itemId}`}

@@ -96,21 +96,23 @@ export default function ItemDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-background py-8 lg:py-12">
-                <div className="container mx-auto px-4 lg:px-8">
-                    <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-                        <Card className="overflow-hidden">
-                            <div className="aspect-square animate-pulse bg-muted" />
+            <div className="min-h-screen py-8 lg:py-12">
+                <div className="section-shell">
+                    <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+                        <Card className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-white dark:bg-card">
+                            <div className="aspect-[4/3] animate-pulse bg-muted" />
                             <CardContent className="space-y-4 p-6">
                                 <div className="h-8 w-3/4 animate-pulse rounded bg-muted" />
                                 <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
                                 <div className="h-24 w-full animate-pulse rounded bg-muted" />
                             </CardContent>
                         </Card>
-                        <Card className="h-fit p-6">
-                            <div className="h-10 w-1/2 animate-pulse rounded bg-muted" />
-                            <div className="mt-6 h-24 w-full animate-pulse rounded bg-muted" />
-                        </Card>
+                        <div className="space-y-6">
+                            <Card className="h-fit rounded-[1.5rem] border border-border/70 bg-white p-6 dark:bg-card">
+                                <div className="h-10 w-1/2 animate-pulse rounded bg-muted" />
+                                <div className="mt-6 h-24 w-full animate-pulse rounded bg-muted" />
+                            </Card>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -119,18 +121,14 @@ export default function ItemDetailPage() {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-background py-8 lg:py-12">
-                <div className="container mx-auto px-4 lg:px-8">
-                    <Card className="mx-auto max-w-2xl p-8 text-center">
-                        <h1 className="text-2xl font-heading font-semibold">{error}</h1>
-                        <p className="mt-3 text-muted-foreground">
-                            Head back to the marketplace and continue browsing listings.
-                        </p>
+            <div className="min-h-screen py-8 lg:py-12">
+                <div className="section-shell">
+                    <Card className="mx-auto max-w-2xl rounded-[1.5rem] border border-border/70 bg-white p-8 text-center shadow-[0_18px_60px_rgba(15,23,42,0.05)] dark:bg-card">
+                        <h1 className="font-heading text-2xl font-semibold tracking-[-0.04em]">{error}</h1>
+                        <p className="mt-3 text-muted-foreground">Head back to the marketplace and continue browsing listings.</p>
                         <div className="mt-6 flex flex-wrap justify-center gap-3">
-                            <Button onClick={() => navigate('/browse')}>
-                                Back to Browse
-                            </Button>
-                            <Button variant="outline" asChild>
+                            <Button onClick={() => navigate('/browse')} className="rounded-full">Back to Browse</Button>
+                            <Button variant="outline" asChild className="rounded-full">
                                 <Link to="/">Go Home</Link>
                             </Button>
                         </div>
@@ -141,21 +139,17 @@ export default function ItemDetailPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background py-8 lg:py-12" data-testid="item-detail-page">
-            <div className="container mx-auto px-4 lg:px-8">
+        <div className="min-h-screen py-8 lg:py-12" data-testid="item-detail-page">
+            <div className="section-shell">
                 <Button variant="ghost" className="mb-6 gap-2 px-0 hover:bg-transparent" onClick={() => navigate(-1)}>
                     <ArrowLeft className="h-4 w-4" />
                     Back
                 </Button>
 
-                <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-                    <motion.div
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35 }}
-                    >
-                        <Card className="overflow-hidden">
-                            <div className="aspect-square bg-muted">
+                <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+                    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+                        <Card className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.05)] dark:bg-card">
+                            <div className="aspect-[4/3] bg-muted">
                                 {primaryImage ? (
                                     <img
                                         src={primaryImage}
@@ -166,11 +160,12 @@ export default function ItemDetailPage() {
                                         }}
                                     />
                                 ) : (
-                                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 text-sm font-medium uppercase tracking-[0.2em] text-slate-400">
+                                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 text-sm font-semibold uppercase tracking-[0.22em] text-slate-400">
                                         No image available
                                     </div>
                                 )}
                             </div>
+
                             {images.length > 1 && (
                                 <CardContent className="flex gap-3 overflow-x-auto p-4">
                                     {images.map((image, index) => (
@@ -178,7 +173,7 @@ export default function ItemDetailPage() {
                                             key={`${getListingId(item)}-${index}`}
                                             type="button"
                                             onClick={() => setActiveImage(index)}
-                                            className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border transition ${activeImage === index ? 'border-primary ring-2 ring-primary/20' : 'border-border'}`}
+                                            className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border transition ${activeImage === index ? 'border-primary ring-2 ring-primary/20' : 'border-border/70'}`}
                                         >
                                             <img src={image} alt={`${item?.title || 'Item'} thumbnail ${index + 1}`} className="h-full w-full object-cover" />
                                         </button>
@@ -188,19 +183,12 @@ export default function ItemDetailPage() {
                         </Card>
                     </motion.div>
 
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.05 }}
-                        className="space-y-6"
-                    >
-                        <Card className="p-6">
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }} className="space-y-6">
+                        <Card className="rounded-[1.5rem] border border-border/70 bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.05)] dark:bg-card">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
-                                    <Badge variant="secondary" className="mb-3">Marketplace Item</Badge>
-                                    <h1 className="text-3xl font-heading font-semibold tracking-[-0.04em] lg:text-4xl">
-                                        {item?.title}
-                                    </h1>
+                                    <Badge className="mb-3 rounded-full px-3 py-1">Marketplace Item</Badge>
+                                    <h1 className="font-heading text-3xl font-semibold tracking-[-0.05em] lg:text-4xl">{item?.title}</h1>
                                 </div>
                             </div>
 
@@ -215,9 +203,9 @@ export default function ItemDetailPage() {
                                 </span>
                             </div>
 
-                            <div className="mt-6 rounded-3xl bg-primary/5 p-5">
+                            <div className="mt-6 rounded-[1.5rem] bg-muted p-5">
                                 <div className="text-sm font-medium text-muted-foreground">Price</div>
-                                <div className="mt-1 text-3xl font-heading font-semibold text-primary">
+                                <div className="mt-1 text-3xl font-heading font-semibold tracking-[-0.04em] text-foreground">
                                     {formatCurrency(price)}
                                     {item?.type === 'rent' ? '/day' : ''}
                                 </div>
@@ -225,60 +213,52 @@ export default function ItemDetailPage() {
 
                             <div className="mt-6 space-y-3">
                                 <h2 className="text-lg font-semibold">Description</h2>
-                                <p className="text-sm leading-7 text-muted-foreground">
-                                    {item?.description || 'No description provided by the seller.'}
-                                </p>
+                                <p className="text-sm leading-7 text-muted-foreground">{item?.description || 'No description provided by the seller.'}</p>
                             </div>
                         </Card>
 
-                        <Card className="p-6">
-                            <h2 className="text-lg font-semibold">Listing details</h2>
-                            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                                <div className="rounded-2xl border border-border p-4">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Item ID</div>
-                                    <div className="mt-2 text-sm font-medium break-all">{getListingId(item)}</div>
+                        <div className="grid gap-6 sm:grid-cols-2">
+                            <Card className="rounded-[1.5rem] border border-border/70 bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.05)] dark:bg-card">
+                                <h2 className="text-base font-semibold">Listing details</h2>
+                                <div className="mt-4 grid gap-4">
+                                    <div className="rounded-2xl border border-border/70 p-4">
+                                        <div className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Item ID</div>
+                                        <div className="mt-2 break-all text-sm font-medium">{getListingId(item)}</div>
+                                    </div>
+                                    <div className="rounded-2xl border border-border/70 p-4">
+                                        <div className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Availability</div>
+                                        <div className="mt-2 text-sm font-medium">{item?.is_available === false ? 'Unavailable' : 'Available'}</div>
+                                    </div>
                                 </div>
-                                <div className="rounded-2xl border border-border p-4">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Availability</div>
-                                    <div className="mt-2 text-sm font-medium">{item?.is_available === false ? 'Unavailable' : 'Available'}</div>
-                                </div>
-                            </div>
-                        </Card>
+                            </Card>
 
-                        <Card className="p-6">
-                            <h2 className="text-lg font-semibold">Seller details</h2>
-                            <div className="mt-4 flex items-start gap-4 rounded-2xl border border-border p-4">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                                    {sellerInitial}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <div className="text-base font-medium">{sellerName}</div>
-                                    <div className="mt-1 text-sm text-muted-foreground">
-                                        <span className="font-medium text-foreground">College:</span> {sellerCollege}
+                            <Card className="rounded-[1.5rem] border border-border/70 bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.05)] dark:bg-card">
+                                <h2 className="text-base font-semibold">Seller details</h2>
+                                <div className="mt-4 flex items-start gap-4 rounded-2xl border border-border/70 p-4">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background">
+                                        {sellerInitial}
                                     </div>
-                                    <div className="mt-1 text-sm text-muted-foreground">
-                                        <span className="font-medium text-foreground">Course:</span> {sellerCourse}
-                                    </div>
-                                    <div className="mt-4">
-                                        {isAuthenticated ? (
-                                            canChatWithSeller ? (
-                                                <Button onClick={() => navigate(`/chat/${id}`)} className="w-full sm:w-auto">
-                                                    Chat with Seller
-                                                </Button>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-base font-medium">{sellerName}</div>
+                                        <div className="mt-1 text-sm text-muted-foreground"><span className="font-medium text-foreground">College:</span> {sellerCollege}</div>
+                                        <div className="mt-1 text-sm text-muted-foreground"><span className="font-medium text-foreground">Course:</span> {sellerCourse}</div>
+                                        <div className="mt-4">
+                                            {isAuthenticated ? (
+                                                canChatWithSeller ? (
+                                                    <Button onClick={() => navigate(`/chat/${id}`)} className="w-full rounded-full sm:w-auto">Chat with Seller</Button>
+                                                ) : (
+                                                    <Button variant="outline" disabled className="w-full rounded-full sm:w-auto">This is your listing</Button>
+                                                )
                                             ) : (
-                                                <Button variant="outline" disabled className="w-full sm:w-auto">
-                                                    This is your listing
+                                                <Button asChild className="w-full rounded-full sm:w-auto">
+                                                    <Link to="/auth">Sign in to chat</Link>
                                                 </Button>
-                                            )
-                                        ) : (
-                                            <Button asChild className="w-full sm:w-auto">
-                                                <Link to="/auth">Sign in to chat</Link>
-                                            </Button>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </Card>
+                            </Card>
+                        </div>
                     </motion.div>
                 </div>
             </div>

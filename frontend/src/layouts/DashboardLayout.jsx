@@ -125,60 +125,45 @@ export default function DashboardLayout() {
 
     return (
         <div className="min-h-screen bg-background flex" data-testid="dashboard-layout">
-            {/* Desktop Sidebar */}
-            <aside className="hidden lg:flex w-64 border-r border-border bg-card flex-col fixed h-screen" data-testid="dashboard-sidebar">
+            <aside className="hidden lg:flex w-72 border-r border-border/60 bg-white/80 backdrop-blur-xl flex-col fixed h-screen dark:bg-card/80" data-testid="dashboard-sidebar">
                 <SidebarContent />
             </aside>
 
-            {/* Main Content */}
-            <div className="flex-1 lg:ml-64">
-                {/* Top Header */}
-                <header className="sticky top-0 z-40 glass border-b border-border/40 h-16" data-testid="dashboard-header">
-                    <div className="flex items-center justify-between h-full px-4 lg:px-8">
-                        {/* Mobile Menu */}
+            <div className="flex-1 lg:ml-72">
+                <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl" data-testid="dashboard-header">
+                    <div className="section-shell flex h-16 items-center justify-between gap-4 lg:h-20">
                         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                             <SheetTrigger asChild>
-                                <Button variant="ghost" size="icon" className="lg:hidden" data-testid="mobile-menu-trigger">
-                                    <List className="w-6 h-6" />
+                                <Button variant="ghost" size="icon" className="rounded-full lg:hidden" data-testid="mobile-menu-trigger">
+                                    <List className="h-6 w-6" />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent side="left" className="p-0 w-64">
+                            <SheetContent side="left" className="w-72 p-0">
                                 <SidebarContent onItemClick={() => setMobileOpen(false)} />
                             </SheetContent>
                         </Sheet>
 
-                        {/* Search */}
-                        <div className="hidden sm:flex flex-1 max-w-md">
-                            <div className="relative w-full">
-                                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <div className="hidden flex-1 sm:flex">
+                            <div className="relative w-full max-w-xl">
+                                <MagnifyingGlass className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     type="text"
                                     placeholder="Search your items..."
-                                    className="pl-10 h-10 bg-secondary/50 border-0"
+                                    className="h-12 rounded-full border-border/70 bg-white pl-11 shadow-sm dark:bg-card"
                                     data-testid="dashboard-search-input"
                                 />
                             </div>
                         </div>
 
-                        {/* Actions */}
                         <div className="flex items-center gap-2">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={toggleTheme}
-                                data-testid="dashboard-theme-toggle"
-                            >
-                                {theme === 'dark' ? (
-                                    <Sun className="w-5 h-5" />
-                                ) : (
-                                    <Moon className="w-5 h-5" />
-                                )}
+                            <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full" data-testid="dashboard-theme-toggle">
+                                {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                             </Button>
 
-                            <Button variant="ghost" size="icon" className="relative" data-testid="notifications-button">
-                                <Bell className="w-5 h-5" />
+                            <Button variant="ghost" size="icon" className="relative rounded-full" data-testid="notifications-button">
+                                <Bell className="h-5 w-5" />
                                 {unreadCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-accent text-accent-foreground text-xs rounded-full flex items-center justify-center font-bold">
+                                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
                                         {unreadCount > 9 ? '9+' : unreadCount}
                                     </span>
                                 )}
@@ -186,28 +171,26 @@ export default function DashboardLayout() {
 
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="gap-2 pl-2 pr-3" data-testid="user-dropdown-trigger">
-                                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                                            <span className="text-sm font-medium text-primary-foreground">
-                                                {user?.name?.charAt(0).toUpperCase()}
-                                            </span>
+                                    <Button variant="ghost" className="gap-2 rounded-full px-2 pr-3" data-testid="user-dropdown-trigger">
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-background">
+                                            <span className="text-sm font-semibold">{user?.name?.charAt(0).toUpperCase()}</span>
                                         </div>
                                         <span className="hidden sm:block font-medium">{user?.name}</span>
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48" data-testid="user-dropdown-menu">
+                                <DropdownMenuContent align="end" className="w-52" data-testid="user-dropdown-menu">
                                     <div className="px-2 py-1.5">
                                         <p className="text-sm font-medium">{user?.name}</p>
                                         <p className="text-xs text-muted-foreground">{user?.email}</p>
                                     </div>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => navigate('/dashboard/profile')} data-testid="profile-dropdown-item">
-                                        <User className="w-4 h-4 mr-2" />
+                                        <User className="mr-2 h-4 w-4" />
                                         Profile
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={logout} className="text-destructive" data-testid="logout-dropdown-item">
-                                        <SignOut className="w-4 h-4 mr-2" />
+                                        <SignOut className="mr-2 h-4 w-4" />
                                         Log Out
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -216,8 +199,7 @@ export default function DashboardLayout() {
                     </div>
                 </header>
 
-                {/* Page Content */}
-                <main className="p-4 lg:p-8">
+                <main className="section-shell py-5 lg:py-8">
                     <Outlet />
                 </main>
             </div>

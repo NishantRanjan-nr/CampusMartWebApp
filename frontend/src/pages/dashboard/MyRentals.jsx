@@ -272,20 +272,18 @@ export default function MyRentals() {
 
     return (
         <div className="space-y-6" data-testid="my-rentals-page">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-heading font-bold tracking-tight">My Rentals</h1>
-                <p className="text-muted-foreground mt-1">
-                    Manage your bookings and rental requests
-                </p>
+            <div className="rounded-[2rem] border border-border/70 bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.05)] dark:bg-card">
+                <p className="section-kicker">Rentals</p>
+                <h1 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.05em]">My Rentals</h1>
+                <p className="mt-2 text-muted-foreground">Manage your bookings and rental requests</p>
             </div>
 
             <Tabs defaultValue="renting" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 max-w-md">
-                    <TabsTrigger value="renting" data-testid="renting-tab">
+                <TabsList className="grid h-12 w-full max-w-md grid-cols-2 rounded-full bg-muted p-1">
+                    <TabsTrigger value="renting" className="rounded-full" data-testid="renting-tab">
                         Items I'm Renting ({myRentals.length})
                     </TabsTrigger>
-                    <TabsTrigger value="incoming" data-testid="incoming-tab">
+                    <TabsTrigger value="incoming" className="rounded-full" data-testid="incoming-tab">
                         Incoming Requests ({incomingBookings.length})
                     </TabsTrigger>
                 </TabsList>
@@ -294,12 +292,12 @@ export default function MyRentals() {
                     {loading ? (
                         <div className="space-y-4">
                             {[...Array(2)].map((_, i) => (
-                                <Card key={i} className="animate-pulse">
-                                    <CardContent className="p-4 flex gap-4">
-                                        <div className="w-24 h-24 bg-muted rounded-lg" />
+                                <Card key={i} className="animate-pulse rounded-[1.5rem] border border-border/70 bg-white dark:bg-card">
+                                    <CardContent className="flex gap-4 p-4">
+                                        <div className="h-24 w-24 rounded-2xl bg-muted" />
                                         <div className="flex-1 space-y-2">
-                                            <div className="h-4 bg-muted rounded w-1/2" />
-                                            <div className="h-3 bg-muted rounded w-1/3" />
+                                            <div className="h-4 w-1/2 rounded bg-muted" />
+                                            <div className="h-3 w-1/3 rounded bg-muted" />
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -312,14 +310,12 @@ export default function MyRentals() {
                             ))}
                         </div>
                     ) : (
-                        <Card className="p-12 text-center" data-testid="no-rentals-message">
-                            <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                            <h3 className="font-heading font-semibold text-lg mb-2">No rentals yet</h3>
-                            <p className="text-muted-foreground mb-4">
-                                Browse the marketplace to find items to rent
-                            </p>
+                        <Card className="rounded-[1.5rem] border border-border/70 bg-white p-12 text-center shadow-[0_18px_60px_rgba(15,23,42,0.05)] dark:bg-card" data-testid="no-rentals-message">
+                            <ShoppingCart className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                            <h3 className="mb-2 font-heading text-lg font-semibold">No rentals yet</h3>
+                            <p className="mb-4 text-muted-foreground">Browse the marketplace to find items to rent</p>
                             <Link to="/browse">
-                                <Button>Browse Items</Button>
+                                <Button className="rounded-full">Browse Items</Button>
                             </Link>
                         </Card>
                     )}
@@ -329,12 +325,12 @@ export default function MyRentals() {
                     {loading ? (
                         <div className="space-y-4">
                             {[...Array(2)].map((_, i) => (
-                                <Card key={i} className="animate-pulse">
-                                    <CardContent className="p-4 flex gap-4">
-                                        <div className="w-24 h-24 bg-muted rounded-lg" />
+                                <Card key={i} className="animate-pulse rounded-[1.5rem] border border-border/70 bg-white dark:bg-card">
+                                    <CardContent className="flex gap-4 p-4">
+                                        <div className="h-24 w-24 rounded-2xl bg-muted" />
                                         <div className="flex-1 space-y-2">
-                                            <div className="h-4 bg-muted rounded w-1/2" />
-                                            <div className="h-3 bg-muted rounded w-1/3" />
+                                            <div className="h-4 w-1/2 rounded bg-muted" />
+                                            <div className="h-3 w-1/3 rounded bg-muted" />
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -347,14 +343,12 @@ export default function MyRentals() {
                             ))}
                         </div>
                     ) : (
-                        <Card className="p-12 text-center" data-testid="no-incoming-message">
-                            <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                            <h3 className="font-heading font-semibold text-lg mb-2">No booking requests</h3>
-                            <p className="text-muted-foreground mb-4">
-                                Requests for your listings will appear here
-                            </p>
+                        <Card className="rounded-[1.5rem] border border-border/70 bg-white p-12 text-center shadow-[0_18px_60px_rgba(15,23,42,0.05)] dark:bg-card" data-testid="no-incoming-message">
+                            <ShoppingCart className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                            <h3 className="mb-2 font-heading text-lg font-semibold">No booking requests</h3>
+                            <p className="mb-4 text-muted-foreground">Requests for your listings will appear here</p>
                             <Link to="/dashboard/add-item">
-                                <Button>Add a Listing</Button>
+                                <Button className="rounded-full">Add a Listing</Button>
                             </Link>
                         </Card>
                     )}
