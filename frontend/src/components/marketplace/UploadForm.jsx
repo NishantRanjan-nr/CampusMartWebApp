@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { UploadSimple, X, ImageSquare, CircleNotch } from '@phosphor-icons/react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { optimizeCloudinaryImageUrl } from '../../lib/image';
 
 const baseFormState = {
     title: '',
@@ -370,8 +371,10 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
                                 className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted"
                             >
                                 <img
-                                    src={url}
+                                    src={optimizeCloudinaryImageUrl(url)}
                                     alt={`Listing ${index + 1}`}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
                                         e.currentTarget.style.display = 'none';
@@ -398,6 +401,8 @@ export default function UploadForm({ initialValues, loading, submitLabel, onSubm
                                 <img
                                     src={pendingPreviews[index]}
                                     alt={file.name}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full h-full object-cover"
                                 />
                                 <Button

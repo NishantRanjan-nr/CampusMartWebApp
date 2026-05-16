@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { getListingId } from '../lib/listing';
+import { optimizeCloudinaryImageUrl } from '../lib/image';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -81,6 +82,8 @@ export default function LandingPage() {
                     <img
                         src="https://images.unsplash.com/photo-1758270704464-f980b03b9633?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODh8MHwxfHNlYXJjaHwzfHxjb2xsZWdlJTIwc3R1ZGVudHMlMjBjYW1wdXMlMjBzb2NpYWxpemluZ3xlbnwwfHx8fDE3NzQ2MDE2MzZ8MA&ixlib=rb-4.1.0&q=85"
                         alt="Campus students"
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover filter blur-sm brightness-75 saturate-75"
                     />
                     <div className="absolute inset-0 hero-overlay" />
@@ -150,7 +153,7 @@ export default function LandingPage() {
                                 <Link to={`/browse?category=${category.id}`} data-testid={`category-${category.id}`}>
                                     <Card className="group overflow-hidden rounded-[1.5rem] border border-border/70 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_90px_rgba(15,23,42,0.12)] dark:bg-card dark:shadow-none">
                                         <div className="relative h-72 overflow-hidden">
-                                            <img src={category.image} alt={category.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                            <img src={category.image} alt={category.name} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
                                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/25 to-transparent" />
 
                                             <div className="absolute inset-x-4 bottom-4 rounded-[1.35rem] border border-white/15 bg-white/12 p-4 text-white backdrop-blur-xl">
@@ -219,7 +222,7 @@ export default function LandingPage() {
                                             }} role="link" tabIndex={0} aria-label={`View details for ${item.title}`} data-testid={`featured-item-${itemId}`}>
                                                 <div className="aspect-[4/5] overflow-hidden bg-slate-200 dark:bg-white/10">
                                                     {item.images?.[0] ? (
-                                                        <img src={item.images[0]} alt={item.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" onError={(event) => {
+                                                        <img src={optimizeCloudinaryImageUrl(item.images[0])} alt={item.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" onError={(event) => {
                                                             event.currentTarget.style.display = 'none';
                                                         }} />
                                                     ) : (

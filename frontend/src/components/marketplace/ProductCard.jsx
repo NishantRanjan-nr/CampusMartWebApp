@@ -5,6 +5,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { MapPin, Star } from '@phosphor-icons/react';
 import { getListingId } from '../../lib/listing';
+import { optimizeCloudinaryImageUrl } from '../../lib/image';
 
 function getRequestStatus(product, currentUserId) {
     const requests = product.requests || [];
@@ -34,7 +35,7 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
     const primaryPrice = isRent
         ? product.rentDetails?.pricePerDay ?? product.price_per_day ?? 0
         : product.price ?? 0;
-    const imageSrc = product.images?.[0];
+    const imageSrc = optimizeCloudinaryImageUrl(product.images?.[0]);
 
     const openItemDetail = () => {
         if (itemId) {
@@ -69,6 +70,8 @@ export default function ProductCard({ product, onRequestRent, onBuyNow, currentU
                     <img
                         src={imageSrc}
                         alt={product.title}
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                         onError={(event) => {
                             event.currentTarget.style.display = 'none';

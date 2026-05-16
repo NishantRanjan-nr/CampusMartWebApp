@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Plus, DotsThree, Pencil, Trash, Star, Package } from '@phosphor-icons/react';
+import { optimizeCloudinaryImageUrl } from '../../lib/image';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -113,8 +114,10 @@ export default function MyListings() {
                                 <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                                     {item.images?.[0] ? (
                                         <img
-                                            src={item.images[0]}
+                                            src={optimizeCloudinaryImageUrl(item.images[0])}
                                             alt={item.title}
+                                            loading="lazy"
+                                            decoding="async"
                                             className="h-full w-full object-cover"
                                             onError={(event) => {
                                                 event.currentTarget.style.display = 'none';

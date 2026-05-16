@@ -19,6 +19,7 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Star, CalendarBlank, Check, X } from '@phosphor-icons/react';
+import { optimizeCloudinaryImageUrl } from '../../lib/image';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -108,8 +109,10 @@ export default function MyRentals() {
                         {/* Item Image */}
                         <div className="w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                             <img
-                                src={booking.item_image}
+                                src={optimizeCloudinaryImageUrl(booking.item_image)}
                                 alt={booking.item_title}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover"
                             />
                         </div>

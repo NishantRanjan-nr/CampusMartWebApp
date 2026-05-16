@@ -8,6 +8,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { useAuth } from '../context/AuthContext';
 import { getListingId } from '../lib/listing';
+import { optimizeCloudinaryImageUrl } from '../lib/image';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -86,7 +87,7 @@ export default function ItemDetailPage() {
     }, [id]);
 
     const images = Array.isArray(item?.images) ? item.images.filter(Boolean) : [];
-    const primaryImage = images[activeImage] || images[0] || '';
+    const primaryImage = optimizeCloudinaryImageUrl(images[activeImage] || images[0] || '');
     const price = item?.price ?? item?.rentDetails?.pricePerDay ?? item?.price_per_day ?? 0;
     const sellerName = seller?.name || item?.owner_name || 'Seller';
     const sellerCollege = seller?.college || item?.owner_college || 'Not set';
@@ -154,6 +155,8 @@ export default function ItemDetailPage() {
                                     <img
                                         src={primaryImage}
                                         alt={item?.title || 'Item image'}
+                                        loading="lazy"
+                                        decoding="async"
                                         className="h-full w-full object-cover"
                                         onError={(event) => {
                                             event.currentTarget.style.display = 'none';
@@ -175,7 +178,7 @@ export default function ItemDetailPage() {
                                             onClick={() => setActiveImage(index)}
                                             className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border transition ${activeImage === index ? 'border-primary ring-2 ring-primary/20' : 'border-border/70'}`}
                                         >
-                                            <img src={image} alt={`${item?.title || 'Item'} thumbnail ${index + 1}`} className="h-full w-full object-cover" />
+                                            <img src={optimizeCloudinaryImageUrl(image)} alt={`${item?.title || 'Item'} thumbnail ${index + 1}`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                                         </button>
                                     ))}
                                 </CardContent>
